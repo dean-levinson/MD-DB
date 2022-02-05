@@ -1,47 +1,10 @@
-from mdlib.db_utils import MDActions, MDProtocol
-
+import sys
 import asyncio
-from typing import Optional
+import logging
 
+from md_client.client import Client
 
-class Client(object):
-    def __init__(self, hostname, db_name, db_directory=None):
-        self.reader = None  # type: Optional[asyncio.StreamReader]
-        self.writer = None  # type: Optional[asyncio.StreamWriter]
-        self.hostname = hostname
-        self.db_name = db_name
-        self.db_directory = db_directory
-        self.db_actions = MDActions(db_directory, db_name)
-        self.sync_task = None
-
-    async def connect(self):
-        self.reader, self.writer = await asyncio.open_connection(
-            self.hostname, 8888)
-
-        # send protobuf of self.client_id, self.db_name
-        self.pull_db()
-        self.sync_task = asyncio.create_task(self.sync_with_remote())
-
-    async def sync_with_remote(self):
-        while True:
-            if self.reader:
-                action = await self.reader.read()
-                self.db_actions.handle_protobuf(action)
-
-    def pull_db(self):
-        pass
-
-    def send_protobuf(self, protobuf):
-        self.logger.debug(f"Sent protobuf {protobuf}")
-        self.writer.write(protobuf)
-
-    def add_item(self, item):
-        pass
-        # message = self.md_protocol.create_message(ADD, paten)
-        # self.send_protobuf(message)
-
-    def delete_item(self, item):
-        pass
+logging.basicConfig(level=logging.DEBUG, format="[%(levelname)s]: %(message)s")
 
 
 async def main():
@@ -52,4 +15,8 @@ async def main():
     await c.connect()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    # Fixes Windows errors while running from cmd
+    if sys.version_info[0] == 3 and sys.version_info[1] >= 8 and sys.platform.startswith('win'):
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
+    asyncio.run(main(), debug=True)
