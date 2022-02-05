@@ -10,8 +10,10 @@ package protoblog;
 enum Actions {
     ADD_ITEM = 0;
     SET_VALUE = 1;
-    DELETE_KEY = 2;
-    DELETE_DB = 3;
+    GET_KEY_VALUE = 2;
+    GET_ALL_KEYS = 3;
+    DELETE_KEY = 4;
+    DELETE_DB = 5;
 }
 
 message DBAction {

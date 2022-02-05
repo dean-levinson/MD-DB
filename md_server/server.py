@@ -5,9 +5,10 @@ from md_server.session import Session
 
 
 class Server(object):
-    def __init__(self):
+    def __init__(self, directory):
         self.sessions = {}
         self.db_sessions = {}
+        self.directory = directory
 
     def handle_conn(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
         peer = writer.get_extra_info('peername')
@@ -18,5 +19,8 @@ class Server(object):
         self.db_sessions.setdefault(session.db_name, []).append(self.sessions[session.client_id])
 
     def handle_session_request(self, db_name, request):
+        # Update local db
+
+        # Update other clients dbs
         for session in self.db_sessions[db_name]:
             session.update_client(request)

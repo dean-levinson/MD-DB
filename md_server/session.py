@@ -2,7 +2,7 @@ import asyncio
 import logging
 from mdlib import md_pb2
 from mdlib.socket_utils import LengthReader, LengthWriter
-from mdlib.db_utils import get_db_md5
+from mdlib.db_utils import get_db_md5, MDActions
 
 
 class Session(object):
@@ -12,6 +12,7 @@ class Session(object):
         self.writer = LengthWriter(writer)
         self.client_id = None
         self.db_name = None
+        self.db_actions = None # can exist only after db_name is known
 
         self.session_task = asyncio.create_task(self.handle_session())
 
@@ -19,6 +20,7 @@ class Session(object):
         await self.get_db_info()
         await self.push_db()
         while True:
+            self.db_actions = MDActions(self.server.directory, self.db_name)
             request = await self.reader.read()
             logging.debug(f"Got request from server {request}")
             self.server.handle_session_request(self.db_name, request)
@@ -32,8 +34,10 @@ class Session(object):
 
     async def push_db(self):
         db_hash = get_db_md5(self.db_name)
+
         client_db_hash = md_pb2.GetDBHash()
         client_db_hash.ParseFromString(await self.reader.read())
+
         db_state = md_pb2.GetDBState()
         if client_db_hash.db_hash != db_hash:
             logging.info("Dbs not synced!")
