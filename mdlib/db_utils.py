@@ -1,3 +1,4 @@
+import hashlib
 class MDActions(object):
     """
     for md_client - After receive protobuf from md_server, change the db accordingly.
@@ -34,3 +35,8 @@ class MDProtocol(object):
     def create_message(self, action, key, value=None):
         # protobuf.pasten()
         pass
+
+def get_db_md5(db_name):
+    with open(db_name, 'rb') as db:
+        data = db.read()
+    return hashlib.md5(data).hexdigest()

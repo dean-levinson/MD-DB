@@ -15,7 +15,7 @@ class Server(object):
 
         # get md_client id and db name from protobuf
         client_id = None  # Should be something
-        db_name = None  # Should be something
+        db_name = "mydb2"  # Should be something
 
         # Verify that this md_client doesn't have active session already
         self.sessions[client_id] = Session(self, reader, writer, client_id, db_name)

@@ -15,7 +15,7 @@ enum Actions {
 }
 
 message DBAction {
-    int32 action_type = 1;
+    Actions action_type = 1;
     optional string key = 2;
     optional string value = 3;
 }
@@ -32,3 +32,13 @@ message GetDB {
 message GetDBHash {
     string db_hash = 1;
 }
+
+enum DBState {
+    NOT_SYNCED = 0;
+    SYNCED = 1;
+}
+
+message GetDBState {
+    DBState state = 1;
+}
+
