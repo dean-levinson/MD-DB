@@ -27,20 +27,14 @@ class Session(object):
         client_db_hash = md_pb2.GetDBHash()
         client_db_hash.ParseFromString(await self.reader.read())
         db_state = md_pb2.GetDBState()
-        logging.debug(f"client: {client_db_hash}")
         if client_db_hash.db_hash != db_hash:
             logging.info("Dbs not synced!")
             db_state.state = md_pb2.DBState.NOT_SYNCED
             data = db_state.SerializeToString()
-            logging.debug(data)
-            logging.debug(f"LENGTH{len(data)}")
-
             self.writer.write(data)
-            print("saa")
             with open(self.db_name, 'rb') as f:
                 db_file = f.read()
             message = md_pb2.GetDB(db_file=db_file)
-            print("HERE")
             self.writer.write(message.SerializeToString())
         else:
             db_state.state = md_pb2.DBState.SYNCED

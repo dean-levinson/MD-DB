@@ -12,7 +12,7 @@ async def main():
         s.handle_conn, '127.0.0.1', 8888)
 
     addrs = ', '.join(str(sock.getsockname()) for sock in server.sockets)
-    print(f'Serving on {addrs}')
+    logging.info(f'Serving on {addrs}')
 
     async with server:
         await server.serve_forever()
