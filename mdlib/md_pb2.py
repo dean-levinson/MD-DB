@@ -15,7 +15,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0emdlib/md.proto\x12\tprotoblog\"k\n\x08\x44\x42\x41\x63tion\x12\'\n\x0b\x61\x63tion_type\x18\x01 \x01(\x0e\x32\x12.protoblog.Actions\x12\x10\n\x03key\x18\x02 \x01(\tH\x00\x88\x01\x01\x12\x12\n\x05value\x18\x03 \x01(\tH\x01\x88\x01\x01\x42\x06\n\x04_keyB\x08\n\x06_value\",\n\x06\x44\x42Sync\x12\x0f\n\x07\x64\x62_name\x18\x01 \x01(\t\x12\x11\n\tclient_id\x18\x02 \x01(\x05\"\x18\n\x05GetDB\x12\x0f\n\x07\x64\x62_file\x18\x01 \x01(\x0c\"\x1c\n\tGetDBHash\x12\x0f\n\x07\x64\x62_hash\x18\x01 \x01(\t\"/\n\nGetDBState\x12!\n\x05state\x18\x01 \x01(\x0e\x32\x12.protoblog.DBState*E\n\x07\x41\x63tions\x12\x0c\n\x08\x41\x44\x44_ITEM\x10\x00\x12\r\n\tSET_VALUE\x10\x01\x12\x0e\n\nDELETE_KEY\x10\x02\x12\r\n\tDELETE_DB\x10\x03*%\n\x07\x44\x42State\x12\x0e\n\nNOT_SYNCED\x10\x00\x12\n\n\x06SYNCED\x10\x01\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0emdlib/md.proto\x12\tprotoblog\"k\n\x08\x44\x42\x41\x63tion\x12\'\n\x0b\x61\x63tion_type\x18\x01 \x01(\x0e\x32\x12.protoblog.Actions\x12\x10\n\x03key\x18\x02 \x01(\tH\x00\x88\x01\x01\x12\x12\n\x05value\x18\x03 \x01(\tH\x01\x88\x01\x01\x42\x06\n\x04_keyB\x08\n\x06_value\",\n\x06\x44\x42Info\x12\x0f\n\x07\x64\x62_name\x18\x01 \x01(\t\x12\x11\n\tclient_id\x18\x02 \x01(\x05\"\x18\n\x05GetDB\x12\x0f\n\x07\x64\x62_file\x18\x01 \x01(\x0c\"\x1c\n\tGetDBHash\x12\x0f\n\x07\x64\x62_hash\x18\x01 \x01(\t\"/\n\nGetDBState\x12!\n\x05state\x18\x01 \x01(\x0e\x32\x12.protoblog.DBState*E\n\x07\x41\x63tions\x12\x0c\n\x08\x41\x44\x44_ITEM\x10\x00\x12\r\n\tSET_VALUE\x10\x01\x12\x0e\n\nDELETE_KEY\x10\x02\x12\r\n\tDELETE_DB\x10\x03*%\n\x07\x44\x42State\x12\x0e\n\nNOT_SYNCED\x10\x00\x12\n\n\x06SYNCED\x10\x01\x62\x06proto3')
 
 _ACTIONS = DESCRIPTOR.enum_types_by_name['Actions']
 Actions = enum_type_wrapper.EnumTypeWrapper(_ACTIONS)
@@ -30,7 +30,7 @@ SYNCED = 1
 
 
 _DBACTION = DESCRIPTOR.message_types_by_name['DBAction']
-_DBSYNC = DESCRIPTOR.message_types_by_name['DBSync']
+_DBINFO = DESCRIPTOR.message_types_by_name['DBInfo']
 _GETDB = DESCRIPTOR.message_types_by_name['GetDB']
 _GETDBHASH = DESCRIPTOR.message_types_by_name['GetDBHash']
 _GETDBSTATE = DESCRIPTOR.message_types_by_name['GetDBState']
@@ -41,12 +41,12 @@ DBAction = _reflection.GeneratedProtocolMessageType('DBAction', (_message.Messag
   })
 _sym_db.RegisterMessage(DBAction)
 
-DBSync = _reflection.GeneratedProtocolMessageType('DBSync', (_message.Message,), {
-  'DESCRIPTOR' : _DBSYNC,
+DBInfo = _reflection.GeneratedProtocolMessageType('DBInfo', (_message.Message,), {
+  'DESCRIPTOR' : _DBINFO,
   '__module__' : 'mdlib.md_pb2'
-  # @@protoc_insertion_point(class_scope:protoblog.DBSync)
+  # @@protoc_insertion_point(class_scope:protoblog.DBInfo)
   })
-_sym_db.RegisterMessage(DBSync)
+_sym_db.RegisterMessage(DBInfo)
 
 GetDB = _reflection.GeneratedProtocolMessageType('GetDB', (_message.Message,), {
   'DESCRIPTOR' : _GETDB,
@@ -78,8 +78,8 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _DBSTATE._serialized_end=397
   _DBACTION._serialized_start=29
   _DBACTION._serialized_end=136
-  _DBSYNC._serialized_start=138
-  _DBSYNC._serialized_end=182
+  _DBINFO._serialized_start=138
+  _DBINFO._serialized_end=182
   _GETDB._serialized_start=184
   _GETDB._serialized_end=208
   _GETDBHASH._serialized_start=210

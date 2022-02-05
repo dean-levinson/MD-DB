@@ -20,7 +20,7 @@ message DBAction {
     optional string value = 3;
 }
 
-message DBSync {
+message DBInfo {
     string db_name = 1;
     int32 client_id = 2;
 }
