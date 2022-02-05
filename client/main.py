@@ -32,8 +32,8 @@ class Client(object):
 
 
     def add_item(self, item):
-        message = self.md_protocol.create_message(ADD, paten)
-        self.send_protobuf(message)
+        # message = self.md_protocol.create_message(ADD, paten)
+        # self.send_protobuf(message)
 
     def delete_item(self, item):
         pass
