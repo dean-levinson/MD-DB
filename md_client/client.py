@@ -1,6 +1,8 @@
 from mdlib.db_utils import MDActions, MDProtocol
+from md_client.exceptions import *
 
 import asyncio
+import logging
 from typing import Optional
 
 
@@ -13,14 +15,20 @@ class Client(object):
         self.db_directory = db_directory
         self.db_actions = MDActions(db_directory, db_name)
         self.sync_task = None
+        self._is_connected = False
 
     async def connect(self):
+        if self._is_connected:
+            raise AlreadyConnected()
+
         self.reader, self.writer = await asyncio.open_connection(
             self.hostname, 8888)
 
         # send protobuf of self.client_id, self.db_name
         self.pull_db()
         self.sync_task = asyncio.create_task(self.sync_with_remote())
+
+        self._is_connected = True
 
     async def sync_with_remote(self):
         while True:
@@ -32,7 +40,7 @@ class Client(object):
         pass
 
     def send_protobuf(self, protobuf):
-        self.logger.debug(f"Sent protobuf {protobuf}")
+        logging.debug(f"Sent protobuf {protobuf}")
         self.writer.write(protobuf)
 
     def add_item(self, item):

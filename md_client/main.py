@@ -13,6 +13,7 @@ async def main():
     db_directory = "."
     c = Client(hostname, db_name, db_directory)
     await c.connect()
+    await c.sync_task
 
 if __name__ == "__main__":
     # Fixes Windows errors while running from cmd

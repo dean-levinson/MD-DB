@@ -1,4 +1,5 @@
 import asyncio
+import logging
 
 
 class Session(object):
@@ -14,7 +15,8 @@ class Session(object):
 
     async def handle_session(self):
         while True:
-            request = await self.reader.readuntil("\n") # use protobuf
+            request = await self.reader.read(2)  # Somehow should know how much to read
+            logging.debug(f"Got request from server {request}")
             self.server.handle_session_request(self.db_name, request)
 
     def push_db(self):
@@ -22,4 +24,3 @@ class Session(object):
 
     def update_client(self, request):
         self.writer.write(request)
-
