@@ -1,7 +1,7 @@
 class MDActions(object):
     """
-    for client - After receive protobuf from server, change the db accordingly.
-    for server - Change the local db.
+    for md_client - After receive protobuf from md_server, change the db accordingly.
+    for md_server - Change the local db.
     """
 
     def __init__(self, db_directory, db_name):
