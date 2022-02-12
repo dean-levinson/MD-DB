@@ -9,9 +9,10 @@ logging.basicConfig(level=logging.DEBUG, format="[%(levelname)s]: %(message)s")
 
 async def main():
     hostname = "127.0.0.1"
-    db_name = "mydb"
+    db_name ="mydb"
     db_directory = "."
-    c = Client(hostname, db_name, db_directory)
+    client_id = 4313
+    c = Client(hostname, db_name, client_id, db_directory)
     await c.connect()
     await c.sync_task
 
