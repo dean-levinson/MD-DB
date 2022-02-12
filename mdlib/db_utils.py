@@ -40,6 +40,10 @@ class MDActions(object):
                 self.add_item(key=action.key, value=action.value)
             case Actions.SET_VALUE:
                 self.set_value(key=action.key, value=action.value)
+            case Actions.GET_KEY_VALUE:
+                self.get_key_value(key=action.key)
+            case Actions.GET_ALL_KEYS:
+                self.get_all_keys()
             case Actions.DELETE_KEY:
                 self.delete_key(key=action.key)
             case Actions.DELETE_DB:
@@ -105,10 +109,16 @@ class MDActions(object):
         key = str(key)
         self.db_data[key] = value
 
-    @db_transaction(write_to_db=False)
+    @db_transaction(write_to_db=False, action_type=Actions.GET_KEY_VALUE)
     def get_key_value(self, key):
         key = str(key)
         return self.db_data[key]
+
+    @db_transaction(write_to_db=False, action_type=Actions.GET_ALL_KEYS)
+    def get_all_keys(self):
+        # Returns an array of all keys in db
+        return list(self.db_data.keys())
+
 
     @db_transaction(write_to_db=True, action_type=Actions.DELETE_KEY)
     def delete_key(self, key):
