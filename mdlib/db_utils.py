@@ -2,6 +2,7 @@ import os
 import json
 import hashlib
 import logging
+import functools
 from mdlib.md_pb2 import DBAction, Actions
 
 
@@ -46,24 +47,69 @@ class MDActions(object):
             case Actions.DELETE_DB:
                 self.delete_db()
 
+    # todo: Consider delete this
+    def __enter__(self):
+        with open(self.db_path, 'r') as db_descriptor:
+            self._tmp_db_dict = json.load(db_descriptor)
+        return self._tmp_db_dict
+
+    # todo: Consider delete this
+    def __exit__(self, exc_type, exc_value, traceback):
+        if traceback:
+            logging.exception(traceback)
+        if exc_type:
+            raise exc_type(exc_value)
+
+        with open(self.db_path, 'w') as db_descriptor:
+            json.dump(self._tmp_db_dict, db_descriptor)
+
+    def db_transaction(write_to_db=True):
+        def deco(func):
+            @functools.wraps(func)
+            def wrapper(self, *args, **kwargs):
+                with open(self.db_path, 'r') as db_descriptor:
+                    self.db_data = json.load(db_descriptor)
+
+                ret_val = func(self, *args, **kwargs)
+
+                if write_to_db:
+                    with open(self.db_path, 'w') as db_descriptor:
+                        json.dump(self.db_data, db_descriptor)
+
+                return ret_val
+            return wrapper
+        return deco
+
+    @db_transaction(write_to_db=True)
     def add_item(self, key, value=None):
-        pass
+        key = str(key)
+        if key in self.db_data:
+            raise KeyError(f"{key} already exist in DB '{self.db_path}'")
+        self.db_data[key] = value
 
+    @db_transaction(write_to_db=True)
     def set_value(self, key, value):
-        pass
+        key = str(key)
+        self.db_data[key] = value
 
+    @db_transaction(write_to_db=False)
     def get_key_value(self, key):
-        pass
+        key = str(key)
+        return self.db_data[key]
 
+    @db_transaction(write_to_db=True)
     def delete_key(self, key):
-        pass
+        key = str(key)
+        if key not in self.db_data:
+            raise KeyError(f"{key} not in DB '{self.db_path}'")
+
+        del self.db_data[key]
 
     def delete_db(self):
         # Delete db from local
         # Delete db from all related clients?
         # Close all related connections gracefully
         pass
-
 
 class MDProtocol(object):
     KEYS = {

@@ -32,11 +32,11 @@ class Client(object):
 
         await self.send_db_info()
         await self.pull_db()
-        self.sync_task = asyncio.create_task(self.sync_with_remote())
+        self.sync_task = asyncio.create_task(self._sync_with_remote())
 
         self._is_connected = True
 
-    async def sync_with_remote(self):
+    async def _sync_with_remote(self):
         while True:
             if self.reader:
                 action = await self.reader.read()
