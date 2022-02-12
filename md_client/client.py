@@ -1,6 +1,6 @@
 from mdlib.socket_utils import LengthReader, LengthWriter
 from mdlib.db_utils import MDActions, get_db_md5
-from md_client.exceptions import *
+from mdlib.exceptions import *
 from mdlib import md_pb2
 
 import asyncio

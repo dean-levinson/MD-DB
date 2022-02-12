@@ -4,6 +4,7 @@ import hashlib
 import logging
 import functools
 from mdlib.md_pb2 import DBAction, Actions
+from mdlib.exceptions import *
 
 class MDActions(object):
     """
@@ -52,7 +53,7 @@ class MDActions(object):
     def _get_client_request(self, action_type, key=None, value=None):
         action = DBAction()
         if action_type is None:
-            raise NotImplementedError("Client didn't choose action!")
+            raise InvalidAction()
         action.action_type = action_type
         if key is not None:
             action.key = key
@@ -101,7 +102,7 @@ class MDActions(object):
         key = str(key)
         if key in self.db_data:
             logging.error(f"{key} already exist in DB '{self.db_path}'")
-            raise KeyError(f"{key} already exist in DB '{self.db_path}'")
+            raise KeyAlreadyExists()
         self.db_data[key] = value
 
     @db_transaction(write_to_db=True, action_type=Actions.SET_VALUE)
@@ -112,6 +113,8 @@ class MDActions(object):
     @db_transaction(write_to_db=False, action_type=Actions.GET_KEY_VALUE)
     def get_key_value(self, key):
         key = str(key)
+        if key not in self.db_data.keys():
+            return None
         return self.db_data[key]
 
     @db_transaction(write_to_db=False, action_type=Actions.GET_ALL_KEYS)
@@ -124,7 +127,7 @@ class MDActions(object):
     def delete_key(self, key):
         key = str(key)
         if key not in self.db_data:
-            raise KeyError(f"{key} not in DB '{self.db_path}'")
+            raise KeyDoesNotExists()
 
         del self.db_data[key]
 
