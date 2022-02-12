@@ -12,17 +12,20 @@ class Session(object):
         self.writer = LengthWriter(writer)
         self.client_id = None
         self.db_name = None
-        self.db_actions = None # can exist only after db_name is known
+        self.db_actions = None  # can exist only after db_name is known
 
         self.session_task = asyncio.create_task(self.handle_session())
 
     async def handle_session(self):
         await self.get_db_info()
         await self.push_db()
+        self.db_actions = MDActions(self.server.directory, self.db_name)
+        logging.debug("started handle session")
         while True:
-            self.db_actions = MDActions(self.server.directory, self.db_name)
+            logging.debug("IN LOOP")
             request = await self.reader.read()
             logging.debug(f"Got request from server {request}")
+            self.db_actions.handle_protobuf(request)
             self.server.handle_session_request(self.db_name, request)
 
     async def get_db_info(self):
@@ -43,15 +46,15 @@ class Session(object):
             logging.info("Dbs not synced!")
             db_state.state = md_pb2.DBState.NOT_SYNCED
             data = db_state.SerializeToString()
-            self.writer.write(data)
+            await self.writer.write(data)
             with open(self.db_name, 'rb') as f:
                 db_file = f.read()
             message = md_pb2.GetDB(db_file=db_file)
-            self.writer.write(message.SerializeToString())
+            await self.writer.write(message.SerializeToString())
         else:
             logging.info("Dbs are already synced!")
             db_state.state = md_pb2.DBState.SYNCED
-            self.writer.write(db_state.SerializeToString())
+            await self.writer.write(db_state.SerializeToString())
 
-    def update_client(self, request):
-        self.writer.write(request)
+    async def update_client(self, request):
+        await self.writer.write(request)

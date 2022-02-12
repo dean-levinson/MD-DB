@@ -8,6 +8,7 @@ class LengthReader(asyncio.StreamReader):
         self.reader = reader
 
     async def read(self):
+        logging.debug("IN READ")
         size = await self.reader.read(4)
         total_size = struct.unpack('>I', size)[0]
         if total_size > 0:
@@ -19,9 +20,10 @@ class LengthWriter(asyncio.StreamWriter):
     def __init__(self, writer: asyncio.StreamWriter):
         self.writer = writer
 
-    def write(self, data):
+    async def write(self, data):
         total_size = len(data)
-        pack1 = struct.pack('>I', total_size)
-        self.writer.write(pack1)
+        size = struct.pack('>I', total_size)
+        self.writer.write(size)
         if total_size > 0:
             self.writer.write(data)
+        await self.writer.drain()
