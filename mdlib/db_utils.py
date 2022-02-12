@@ -128,11 +128,13 @@ class MDActions(object):
 
         del self.db_data[key]
 
+    @db_transaction(write_to_db=False, action_type=Actions.DELETE_DB)
     def delete_db(self):
-        # Delete db from local
-        # Delete db from all related clients?
-        # Close all related connections gracefully
-        pass
+        logging.info(f'deleting db {self.db_path}!')
+        os.remove(self.db_path)
+        if self.is_client:
+            # TODO: close client's connection to sever somehow
+            pass
 
 def get_db_md5(db_name):
     with open(db_name, 'rb') as db:

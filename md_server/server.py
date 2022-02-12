@@ -19,7 +19,8 @@ class Server(object):
         self.db_sessions.setdefault(session.db_name, []).append(self.sessions[session.client_id])
 
     def handle_session_request(self, db_name, request):
-        # Local db was updated in session
+        # Local db was updated in Session
+
         # Update other clients dbs
         logging.debug(f"Updating {db_name}")
         for session in self.db_sessions[db_name]:
