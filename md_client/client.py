@@ -2,6 +2,7 @@ from mdlib.socket_utils import LengthReader, LengthWriter
 from mdlib.db_utils import MDActions, get_db_md5
 from mdlib.exceptions import *
 from mdlib import md_pb2
+from mdlib.md_pb2 import InitConnActions
 
 import asyncio
 import logging
@@ -20,7 +21,7 @@ class Client(object):
         self.sync_task = None
         self._is_connected = False
 
-    async def connect(self):
+    async def connect(self, add_user=False, add_db_permissions=False):
         if self._is_connected:
             raise AlreadyConnected()
 
@@ -29,8 +30,8 @@ class Client(object):
         self.reader = LengthReader(reader)
         self.writer = LengthWriter(writer)
 
-        await self.send_db_info()
-        await self.pull_db()
+        await self._init_conn(add_user, add_db_permissions)
+
         self.sync_task = asyncio.create_task(self._sync_with_remote())
 
         self._is_connected = True
@@ -42,21 +43,55 @@ class Client(object):
                 logging.debug(f'client {self.client_id} got action from server')
                 self.db_actions.handle_protobuf(action)
 
-    async def send_db_info(self):
-        message = md_pb2.DBInfo(db_name=self.db_name, client_id=self.client_id)
-        await self.writer.write(message.SerializeToString())
+    async def _init_conn(self, add_user=False, add_db_permissions=False):
+        if add_user:
+            await self._add_user()
+        if add_db_permissions:
+            await self._add_db_permissions()
+
+        await self._send_db_info()
+        await self.pull_db()
+
+    async def _send_db_info(self):
+        message = md_pb2.InitConn(action_type=InitConnActions.DB_INFO, client_id=self.client_id, db_name=self.db_name)
+        await self.send_protobuf(message)
+
+    async def _add_user(self):
+        message = md_pb2.InitConn(action_type=InitConnActions.ADD_USER, client_id=self.client_id)
+        await self.send_protobuf(message)
+
+    async def _add_db_permissions(self):
+        message = md_pb2.InitConn(action_type=InitConnActions.ADD_PERMISSIONS, client_id=self.client_id, db_name=self.db_name)
+        await self.send_protobuf(message)
+
+    async def _check_hash(self, db_hash):
+        message = md_pb2.InitConn(action_type=InitConnActions.CHECK_DB_HASH, db_hash=db_hash)
+        await self.send_protobuf(message)
+        message = md_pb2.InitConn(action_type=InitConnActions.GET_DB_STATE)
+        await self.send_protobuf(message)
+
+        message = md_pb2.InitConn()
+        message.ParseFromString(await self.reader.read())
+        if not message.action_type == InitConnActions.GET_DB_STATE:
+            raise UnexpectedAction()
+        return message.state
 
     async def pull_db(self):
         db_hash = get_db_md5(self.db_name)
-        message = md_pb2.GetDBHash(db_hash=db_hash)
-        await self.writer.write(message.SerializeToString())
+        while not await self._check_hash(db_hash):
+            message = md_pb2.InitConn(action_type=InitConnActions.GET_DB)
+            await self.send_protobuf(message)
 
-        db_state = md_pb2.GetDBState()
-        db_state.ParseFromString(await self.reader.read())
-
-        if db_state.state == md_pb2.DBState.NOT_SYNCED:
-            logging.info("DBs are not synced! Syncing dbs, this might overwrite data")
-            db_data = md_pb2.GetDB()
-            db_data.ParseFromString(await self.reader.read())
+            message = md_pb2.InitConn()
+            message.ParseFromString(await self.reader.read())
+            if not message.action_type == InitConnActions.GET_DB:
+                raise UnexpectedAction()
             with open(self.db_name, 'wb') as f:
-                f.write(db_data.db_file)
+                f.write(message.db_file)
+            db_hash = get_db_md5(self.db_name)
+
+    async def send_protobuf(self, protobuf):
+        if isinstance(protobuf, (str, bytes)):
+            # protobuf was already serialized
+            await self.writer.write(protobuf)
+        await self.writer.write(protobuf.SerializeToString())

@@ -13,7 +13,7 @@ async def main():
     db_directory = "."
     client_id = 4313
     c = Client(hostname, db_name, client_id, db_directory)
-    await c.connect()
+    await c.connect(add_user=False, add_db_permissions=True)
     await c.sync_task
 
 if __name__ == "__main__":

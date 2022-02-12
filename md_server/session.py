@@ -1,8 +1,10 @@
 import asyncio
 import logging
 from mdlib import md_pb2
+from mdlib.md_pb2 import InitConnActions
 from mdlib.socket_utils import LengthReader, LengthWriter
 from mdlib.db_utils import get_db_md5, MDActions
+from mdlib.exceptions import *
 
 
 class Session(object):
@@ -16,9 +18,53 @@ class Session(object):
 
         self.session_task = asyncio.create_task(self.handle_session())
 
+    async def _init_conn(self):
+        is_user_verified = False
+        is_check_hash = False
+        while (not is_check_hash) or (not is_user_verified):
+            message = md_pb2.InitConn()
+            message.ParseFromString(await self.reader.read())
+            logging.debug(f"init_conn {message.action_type}")
+            match message.action_type:
+                case InitConnActions.ADD_USER:
+                    self.server.users.add_user(message.client_id)
+                    break
+                case InitConnActions.ADD_PERMISSIONS:
+                    self.server.users.add_db_permission(message.client_id, message.db_name)
+                    break
+                case InitConnActions.DB_INFO:
+                    self.client_id = message.client_id
+                    self.db_name = message.db_name
+                    if not self.server.users.check_client_permissions(self.client_id, self.db_name):
+                        # TODO: make sure raise closes session and notify client
+                        logging.info(f"Client not allowed!")
+                        raise ClientNotAllowed()
+                    logging.info(f"Client {self.client_id} connected to db {self.db_name}")
+                    is_user_verified = True
+                    break
+                case InitConnActions.CHECK_DB_HASH:
+                    is_check_hash = self._check_db_md5(message.db_hash)
+                    break
+                case InitConnActions.GET_DB_STATE:
+                    message = md_pb2.InitConn(action_type=InitConnActions.GET_DB_STATE, state=is_check_hash)
+                    await self.writer.write(message)
+                    break
+                case InitConnActions.GET_DB:
+                    with open(self.db_name, 'rb') as f:
+                        db_file = f.read()
+                    message = md_pb2.InitConn(action_type=InitConnActions.GET_DB, db_file=db_file)
+                    await self.writer.write(message)
+                    break
+                case InitConnActions.INIT_DONE:
+                    logging.error("Client does not determine when init is done")
+                    break
+                case _:
+                    raise InvalidAction()
+
+
+
     async def handle_session(self):
-        await self.get_db_info()
-        await self.push_db()
+        await self._init_conn()
         self.db_actions = MDActions(self.server.directory, self.db_name)
         logging.debug("started handle session")
         while True:
@@ -28,33 +74,9 @@ class Session(object):
             self.db_actions.handle_protobuf(request)
             self.server.handle_session_request(self.db_name, request)
 
-    async def get_db_info(self):
-        db_info = md_pb2.DBInfo()
-        db_info.ParseFromString(await self.reader.read())
-        self.client_id = db_info.client_id
-        self.db_name = db_info.db_name
-        logging.info(f"Client {self.client_id} connected to db {self.db_name}")
-
-    async def push_db(self):
+    async def _check_db_md5(self, client_db_hash):
         db_hash = get_db_md5(self.db_name)
-
-        client_db_hash = md_pb2.GetDBHash()
-        client_db_hash.ParseFromString(await self.reader.read())
-
-        db_state = md_pb2.GetDBState()
-        if client_db_hash.db_hash != db_hash:
-            logging.info("Dbs not synced!")
-            db_state.state = md_pb2.DBState.NOT_SYNCED
-            data = db_state.SerializeToString()
-            await self.writer.write(data)
-            with open(self.db_name, 'rb') as f:
-                db_file = f.read()
-            message = md_pb2.GetDB(db_file=db_file)
-            await self.writer.write(message.SerializeToString())
-        else:
-            logging.info("Dbs are already synced!")
-            db_state.state = md_pb2.DBState.SYNCED
-            await self.writer.write(db_state.SerializeToString())
+        return client_db_hash == db_hash
 
     async def update_client(self, request):
         await self.writer.write(request)

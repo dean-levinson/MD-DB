@@ -2,13 +2,14 @@ import asyncio
 import logging
 
 from md_server.session import Session
-
+from md_server.users import DBUsers
 
 class Server(object):
     def __init__(self, directory):
         self.sessions = {}
         self.db_sessions = {}
         self.directory = directory
+        self.users = DBUsers(self.directory)
 
     def handle_conn(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
         peer = writer.get_extra_info('peername')
