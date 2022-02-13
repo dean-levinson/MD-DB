@@ -140,6 +140,7 @@ class MDActions(object):
             pass
 
 def get_db_md5(db_name):
+    logging.info(f"dbname: {db_name}")
     with open(db_name, 'rb') as db:
         data = db.read()
     return hashlib.md5(data).hexdigest()

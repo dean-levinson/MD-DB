@@ -5,8 +5,7 @@ from md_server.server import Server
 
 logging.basicConfig(level=logging.DEBUG, format="[%(levelname)s]: %(message)s")
 
-
-async def main():
+async def run():
     s = Server('.')
     server = await asyncio.start_server(
         s.handle_conn, '127.0.0.1', 8888)
@@ -17,6 +16,5 @@ async def main():
     async with server:
         await server.serve_forever()
 
-if __name__ == "__main__":
-    asyncio.run(main(), debug=True)
-
+def main():
+    asyncio.run(run(), debug=True)

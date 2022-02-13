@@ -1,0 +1,6 @@
+pytest
+pytest-asyncio
+protobuf
+-e mdlib
+-e md_server
+-e md_client
