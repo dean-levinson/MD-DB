@@ -1,3 +1,4 @@
+import os
 import asyncio
 import logging
 from mdlib import md_pb2
@@ -8,13 +9,14 @@ from mdlib.exceptions import *
 
 
 class Session(object):
-    def __init__(self, server, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
+    def __init__(self, server, reader: asyncio.StreamReader, writer: asyncio.StreamWriter, directory: str):
         self.server = server
         self.reader = LengthReader(reader)
         self.writer = LengthWriter(writer)
         self.client_id = None
         self.db_name = None
-        self.db_actions = None  # can exist only after db_name is known
+        self.db_actions = None # can exist only after db_name is known
+        self.directory = directory
 
         self.session_task = asyncio.create_task(self.handle_session())
 
@@ -50,7 +52,7 @@ class Session(object):
                     await self.writer.write(message)
                     break
                 case InitConnActions.GET_DB:
-                    with open(self.db_name, 'rb') as f:
+                    with open(os.path.join(self.directory, self.db_name), 'rb') as f:
                         db_file = f.read()
                     message = md_pb2.InitConn(action_type=InitConnActions.GET_DB, db_file=db_file)
                     await self.writer.write(message)
@@ -75,7 +77,7 @@ class Session(object):
             self.server.handle_session_request(self.db_name, request)
 
     async def _check_db_md5(self, client_db_hash):
-        db_hash = get_db_md5(self.db_name)
+        db_hash = get_db_md5(os.path.join(self.directory, self.db_name))
         return client_db_hash == db_hash
 
     async def update_client(self, request):

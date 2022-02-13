@@ -1,3 +1,4 @@
+import os
 from mdlib.socket_utils import LengthReader, LengthWriter
 from mdlib.db_utils import MDActions, get_db_md5
 from mdlib.exceptions import *
@@ -10,13 +11,13 @@ from typing import Optional
 
 
 class Client(object):
-    def __init__(self, hostname, db_name, client_id, db_directory=None):
-        self.reader = None  # type: Optional[LengthReader]
-        self.writer = None  # type: Optional[LengthWriter]
-        self.hostname = hostname
+    def __init__(self, addr, db_name, client_id, db_directory=None):
+        self.reader = None  # type: Optional[asyncio.StreamReader]
+        self.writer = None  # type: Optional[asyncio.StreamWriter]
+        self.hostname, self.port = addr
         self.db_name = db_name
         self.client_id = client_id
-        self.db_directory = db_directory
+        self.db_directory = db_directory or '.'
         self.db_actions = MDActions(db_directory, db_name, is_client=True)
         self.sync_task = None
         self._is_connected = False
@@ -26,7 +27,7 @@ class Client(object):
             raise AlreadyConnected()
 
         reader, writer = await asyncio.open_connection(
-            self.hostname, 8888)
+            self.hostname, self.port)
         self.reader = LengthReader(reader)
         self.writer = LengthWriter(writer)
 
@@ -77,7 +78,7 @@ class Client(object):
         return message.state
 
     async def pull_db(self):
-        db_hash = get_db_md5(self.db_name)
+        db_hash = get_db_md5(os.path.join(self.db_directory, self.db_name))
         while not await self._check_hash(db_hash):
             message = md_pb2.InitConn(action_type=InitConnActions.GET_DB)
             await self.send_protobuf(message)
@@ -86,7 +87,7 @@ class Client(object):
             message.ParseFromString(await self.reader.read())
             if not message.action_type == InitConnActions.GET_DB:
                 raise UnexpectedAction()
-            with open(self.db_name, 'wb') as f:
+            with open(os.path.join(self.db_directory, self.db_name), 'wb') as f:
                 f.write(message.db_file)
             db_hash = get_db_md5(self.db_name)
 
