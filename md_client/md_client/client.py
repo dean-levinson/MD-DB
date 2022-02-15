@@ -80,6 +80,7 @@ class Client(object):
     async def pull_db(self):
         db_hash = get_db_md5(os.path.join(self.db_directory, self.db_name))
         while not await self._check_hash(db_hash):
+            logging.info("DBS not matched!")
             message = md_pb2.InitConn(action_type=InitConnActions.GET_DB)
             await self.send_protobuf(message)
 
@@ -87,6 +88,7 @@ class Client(object):
             message.ParseFromString(await self.reader.read())
             if not message.action_type == InitConnActions.GET_DB:
                 raise UnexpectedAction()
+
             with open(os.path.join(self.db_directory, self.db_name), 'wb') as f:
                 f.write(message.db_file)
             db_hash = get_db_md5(self.db_name)
