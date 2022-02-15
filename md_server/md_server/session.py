@@ -129,7 +129,7 @@ class Session(object):
             request = await self.reader.read()
             logging.debug(f"Got request from server {request}")
             self.db_actions.handle_protobuf(request)
-            self.server.handle_session_request(self.db_name, request)
+            # self.server.handle_session_request(self.db_name, request)
 
     def _check_db_md5(self, client_db_hash):
         db_hash = get_db_md5(os.path.join(self.directory, self.db_name))
