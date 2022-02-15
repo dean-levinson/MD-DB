@@ -19,6 +19,8 @@ class DBUsers(object):
         logging.debug(f'User {client_id} was added!')
         self.db_actions.add_item(client_id, [])
 
+    def is_user_exists(self, client_id: int):
+        return self.db_actions.get_key_value(client_id) is not None
 
     def add_db_permission(self, client_id, db_name):
         assert db_name != self.db_name, "Client is never allowed to access server!"

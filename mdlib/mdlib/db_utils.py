@@ -36,6 +36,7 @@ class MDActions(object):
     def handle_protobuf(self, protobuf_obj):
         action = DBAction()
         action.ParseFromString(protobuf_obj)
+        print(f"Action: {action.action_type}")
         match action.action_type:
             case Actions.ADD_ITEM:
                 self.add_item(key=action.key, value=action.value)
