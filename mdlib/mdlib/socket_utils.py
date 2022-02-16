@@ -20,9 +20,9 @@ class LengthWriter(asyncio.StreamWriter):
         self.writer = writer
 
     async def write(self, data):
-        total_size = len(data)
-        size = struct.pack('>I', total_size)
-        self.writer.write(size)
-        if total_size > 0:
-            self.writer.write(data)
+        buf = struct.pack('>I', len(data))
+        if len(data) > 0:
+            buf += data
+
+        self.writer.write(buf)
         await self.writer.drain()

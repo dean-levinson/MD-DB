@@ -47,7 +47,7 @@ class Client(object):
                     action = await self.reader.read()
                     logging.debug(f'client {self.client_id} got action from server')
                     await self.db_actions.handle_protobuf(action)
-        except asyncio.CancelledError:
+        except (asyncio.CancelledError, Exception):
             pass
 
     async def _init_conn(self, add_user=False, add_db_permissions=False):
