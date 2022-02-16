@@ -7,6 +7,28 @@ package protoblog;
 // Style guide prefers prefixing enum values instead of surrounding
 // with an enclosing message
 
+enum MessageTypes {
+    DB_ACTION = 0;
+    DB_RESULT = 1;
+}
+
+enum Results {
+    SUCCESS = 0;
+    KEY_DOES_NOT_EXISTS = 1;
+    KEY_ALREADY_EXISTS = 2;
+}
+
+message DBResult {
+    Results result = 1;
+    optional string result_value = 2;
+}
+
+message DBMessage {
+    MessageTypes message_type = 1;
+    optional DBAction db_action = 2;
+    optional DBResult db_result = 3;
+}
+
 enum Actions {
     ADD_ITEM = 0;
     SET_VALUE = 1;
