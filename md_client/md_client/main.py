@@ -38,5 +38,10 @@ def main():
     thread = threading.Thread(target=db_backend, args=(loop, client))
     thread.start()
 
-    IPython.start_ipython(user_ns={'client': ClientActions(loop, client, "mydb", ".")})
+    IPython.start_ipython(user_ns={
+        'client': ClientActions(loop, client, "mydb", ".")
+    })
+    
+    # TODO: the cancellation of the tasks should be more gracefully
+    loop.call_soon_threadsafe(loop.stop)
     
