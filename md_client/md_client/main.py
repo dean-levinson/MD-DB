@@ -60,7 +60,7 @@ def main(host, port, dbname, dbdir):
 
     IPython.start_ipython(
         user_ns={
-            'client': ClientActions(loop, client, channel, "mydb", ".")
+            'client': ClientActions(loop, client, channel, dbname, dbdir)
         },
         argv=[],
         config=config
