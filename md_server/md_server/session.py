@@ -9,7 +9,7 @@ from mdlib.exceptions import InvalidAction
 from mdlib.md_pb2 import INIT_DONE
 from mdlib.socket_utils import LengthReader, LengthWriter
 from mdlib.db_utils import get_db_md5, MDActions
-from mdlib.exceptions import ClientNotAllowed
+from mdlib.exceptions import ClientNotAllowed, KeyDoesNotExists, KeyAlreadyExists
 
 Handler = namedtuple("Handler", ["handler", "is_async"])
 
@@ -128,7 +128,11 @@ class Session(object):
             logging.debug("IN LOOP")
             request = await self.reader.read()
             logging.debug(f"Got request from server {request}")
-            self.db_actions.handle_protobuf(request)
+
+            try:
+                self.db_actions.handle_protobuf(request)
+            except (KeyDoesNotExists, KeyAlreadyExists):
+                logging.error("Could not perform action")
             # self.server.handle_session_request(self.db_name, request)
 
     def _check_db_md5(self, client_db_hash):
