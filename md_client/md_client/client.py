@@ -11,14 +11,15 @@ from typing import Optional
 
 
 class Client(object):
-    def __init__(self, addr, db_name, client_id, db_directory=None):
+    def __init__(self, addr, db_name, client_id, channel: asyncio.Queue, db_directory=None):
         self.reader = None  # type: Optional[asyncio.StreamReader]
         self.writer = None  # type: Optional[asyncio.StreamWriter]
         self.hostname, self.port = addr
         self.db_name = db_name
         self.client_id = client_id
         self.db_directory = db_directory or '.'
-        self.db_actions = MDActions(db_directory, db_name, is_client=True)
+        self.channel: asyncio.Queue = channel
+        self.db_actions = MDActions(db_directory, db_name, self.channel, is_client=True)
         self.sync_task = None
         self._is_connected = False
 
@@ -42,7 +43,7 @@ class Client(object):
             if self.reader:
                 action = await self.reader.read()
                 logging.debug(f'client {self.client_id} got action from server')
-                self.db_actions.handle_protobuf(action)
+                await self.db_actions.handle_protobuf(action)
 
     async def _init_conn(self, add_user=False, add_db_permissions=False):
         if add_user:

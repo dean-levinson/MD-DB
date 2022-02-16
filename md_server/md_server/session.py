@@ -3,15 +3,18 @@ import asyncio
 import inspect
 import logging
 from collections import namedtuple
+from unicodedata import name
 from mdlib import md_pb2
-from mdlib.md_pb2 import InitConnActions
+from mdlib.md_pb2 import InitConnActions, Results, DBResult
 from mdlib.exceptions import InvalidAction
 from mdlib.md_pb2 import INIT_DONE
+from mdlib.md_pb2 import DBMessage, MessageTypes, Results
 from mdlib.socket_utils import LengthReader, LengthWriter
-from mdlib.db_utils import get_db_md5, MDActions
+from mdlib.db_utils import get_db_md5, MDActions, EXCEPTIONS_TO_RESULT
 from mdlib.exceptions import ClientNotAllowed, KeyDoesNotExists, KeyAlreadyExists
 
 Handler = namedtuple("Handler", ["handler", "is_async"])
+ExceptionTuple = namedtuple("ExceptionTuple", ["should_raise", "exception_type"])
 
 def validate_args_kwargs(arguments):
     def decorator(func):
@@ -122,17 +125,24 @@ class Session(object):
 
     async def handle_session(self):
         await self._init_conn()
-        self.db_actions = MDActions(self.server.directory, self.db_name)
+        self.db_actions = MDActions(self.server.directory, self.db_name, None)
         logging.debug("started handle session")
         while True:
             logging.debug("IN LOOP")
             request = await self.reader.read()
             logging.debug(f"Got request from server {request}")
 
+            message = DBMessage(message_type=MessageTypes.DB_RESULT, 
+                                db_result=DBResult(result=Results.SUCCESS))
+            
             try:
-                self.db_actions.handle_protobuf(request)
-            except (KeyDoesNotExists, KeyAlreadyExists):
-                logging.error("Could not perform action")
+                result = await self.db_actions.handle_protobuf(request)
+                message.db_result.result_value = str(result)
+            except Exception as e:
+                message.db_result.result = EXCEPTIONS_TO_RESULT[type(e)]
+            
+            await self.send_protobuf(message)
+            # TODO:
             # self.server.handle_session_request(self.db_name, request)
 
     def _check_db_md5(self, client_db_hash):

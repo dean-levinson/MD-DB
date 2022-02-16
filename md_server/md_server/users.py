@@ -8,7 +8,7 @@ class DBUsers(object):
     def __init__(self, directory):
         self.db_name = 'users'
         self.directory = directory
-        self.db_actions = MDActions(self.directory, self.db_name)
+        self.db_actions = MDActions(self.directory, self.db_name, channel=None)
 
     def add_user(self, client_id):
         # Verify username does not exist

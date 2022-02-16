@@ -34,12 +34,13 @@ def main():
 
     # Create the actual db event loop and pass i to the thread
     loop = asyncio.new_event_loop()
-    client = Client((hostname, 8888), db_name, client_id, db_directory)
+    channel = asyncio.Queue()
+    client = Client((hostname, 8888), db_name, client_id, channel, db_directory=db_directory)
     thread = threading.Thread(target=db_backend, args=(loop, client))
     thread.start()
 
     IPython.start_ipython(user_ns={
-        'client': ClientActions(loop, client, "mydb", ".")
+        'client': ClientActions(loop, client, channel, "mydb", ".")
     })
     
     # TODO: the cancellation of the tasks should be more gracefully

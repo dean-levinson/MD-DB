@@ -1,10 +1,19 @@
 import os
+import asyncio
 import json
 import hashlib
 import logging
 import functools
-from mdlib.md_pb2 import DBAction, Actions
+from mdlib.md_pb2 import DBAction, Actions, DBMessage, MessageTypes, Results
 from mdlib.exceptions import *
+
+RESULTS_TO_EXCEPTIONS = {
+    Results.SUCCESS: None,
+    Results.KEY_DOES_NOT_EXISTS: KeyDoesNotExists,
+    Results.KEY_ALREADY_EXISTS: KeyAlreadyExists
+}
+        
+EXCEPTIONS_TO_RESULT = {v: k for k, v in RESULTS_TO_EXCEPTIONS.items()}
 
 class MDActions(object):
     """
@@ -12,11 +21,12 @@ class MDActions(object):
     for md_server - Change the local db.
     """
 
-    def __init__(self, db_directory, db_name, is_client=False):
+    def __init__(self, db_directory, db_name, channel, is_client=False):
         self.db_directory = db_directory
         self.db_name = db_name
         self.db_path = os.path.join(self.db_directory, self.db_name)
         self.is_client = is_client
+        self.channel: asyncio.Queue = channel
 
         self.db_data = {}
         self.load_db_data()
@@ -33,39 +43,47 @@ class MDActions(object):
         with open(self.db_path, 'w') as db_descriptor:
             json.dump({}, db_descriptor)
 
-    def handle_protobuf(self, protobuf_obj):
-        action = DBAction()
-        action.ParseFromString(protobuf_obj)
-        print(f"Action: {action.action_type}")
-        match action.action_type:
-            case Actions.ADD_ITEM:
-                self.add_item(key=action.key, value=action.value)
-            case Actions.SET_VALUE:
-                self.set_value(key=action.key, value=action.value)
-            case Actions.GET_KEY_VALUE:
-                self.get_key_value(key=action.key)
-            case Actions.GET_ALL_KEYS:
-                self.get_all_keys()
-            case Actions.DELETE_KEY:
-                self.delete_key(key=action.key)
-            case Actions.DELETE_DB:
-                self.delete_db()
+    async def handle_protobuf(self, protobuf_obj):
+        message = DBMessage()
+        message.ParseFromString(protobuf_obj)
 
-            # TODO: Should add something like Action.GET_ALL_KEYS_RESULTS only for the clinet
-            # to allow getting data back from the server.
-            # Needs to be implemented with async queue between the sync_with_remote task
-            # and the task the user scheduled through the IPython
+        if message.message_type == MessageTypes.DB_ACTION:
+            action = message.db_action
+            match action.action_type:
+                case Actions.ADD_ITEM:
+                    self.add_item(key=action.key, value=action.value)
+                case Actions.SET_VALUE:
+                    self.set_value(key=action.key, value=action.value)
+                case Actions.GET_KEY_VALUE:
+                    return self.get_key_value(key=action.key)
+                case Actions.GET_ALL_KEYS:
+                    return self.get_all_keys()
+                case Actions.DELETE_KEY:
+                    self.delete_key(key=action.key)
+                case Actions.DELETE_DB:
+                    self.delete_db()
+
+                # TODO: Should add something like Action.GET_ALL_KEYS_RESULTS only for the clinet
+                # to allow getting data back from the server.
+                # Needs to be implemented with async queue between the sync_with_remote task
+                # and the task the user scheduled through the IPython
+        elif message.message_type == MessageTypes.DB_RESULT:
+            logging.info(f"Result of last operation: {message.db_result.result}")
+            await self.channel.put(message.db_result)
+            
 
     def _get_client_request(self, action_type, key=None, value=None):
-        action = DBAction()
+        message = DBMessage()
         if action_type is None:
             raise InvalidAction()
-        action.action_type = action_type
+
+        message.message_type = MessageTypes.DB_ACTION
+        message.db_action.action_type = action_type
         if key is not None:
-            action.key = key
+            message.db_action.key = key
         if value is not None:
-            action.value = value
-        return action.SerializeToString()
+            message.db_action.value = value
+        return message.SerializeToString()
 
     # todo: Consider delete this
     def __enter__(self):
