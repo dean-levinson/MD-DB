@@ -8,7 +8,6 @@ class LengthReader(asyncio.StreamReader):
         self.reader = reader
 
     async def read(self):
-        logging.debug("IN READ")
         size = await self.reader.read(4)
         total_size = struct.unpack('>I', size)[0]
         if total_size > 0:

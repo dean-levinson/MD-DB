@@ -1,6 +1,9 @@
 pytest
 pytest-asyncio
 protobuf
+click
+ipython
+termcolor
 -e mdlib
 -e md_server
 -e md_client

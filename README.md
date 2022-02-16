@@ -17,6 +17,6 @@ pip install -r requirements.txt
 
 * Run the main.py files (outside the MD-DB folder):
 ```cmd
-md_server
-md_client
+md_server -h 127.0.0.1 -p 8888
+md_client -h 127.0.0.1 -p 8888 -d mydb
 ```

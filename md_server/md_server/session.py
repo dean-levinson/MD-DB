@@ -51,8 +51,6 @@ class Session(object):
             InitConnActions.INIT_DONE: Handler(self.handle_init_done, False)
         }
 
-        self.session_task = asyncio.create_task(self.handle_session())
-
     @validate_args_kwargs(['client_id'])
     def handle_add_user(self, *args, **kwargs):
         self.server.users.add_user(kwargs['client_id'])
@@ -100,7 +98,6 @@ class Session(object):
         while (not self.is_check_hash or not self.checked_state) or (not self.is_user_verified):
             message = md_pb2.InitConn()
             message.ParseFromString(await self.reader.read())
-            logging.debug(f"init_conn {message.action_type}")
 
             kwargs = {k[0]: k[1]
                       for k in inspect.getmembers(message)
@@ -126,12 +123,8 @@ class Session(object):
     async def handle_session(self):
         await self._init_conn()
         self.db_actions = MDActions(self.server.directory, self.db_name, None)
-        logging.debug("started handle session")
         while True:
-            logging.debug("IN LOOP")
             request = await self.reader.read()
-            logging.debug(f"Got request from server {request}")
-
             message = DBMessage(message_type=MessageTypes.DB_RESULT, 
                                 db_result=DBResult(result=Results.SUCCESS))
             

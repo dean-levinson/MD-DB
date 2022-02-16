@@ -12,10 +12,10 @@ class DBUsers(object):
 
     def add_user(self, client_id):
         # Verify username does not exist
-        logging.debug("HERE1")
         if self.db_actions.get_key_value(client_id) is not None:
             logging.error("Username already exist!")
             raise ClientIDAlreadyExists()
+
         logging.debug(f'User {client_id} was added!')
         self.db_actions.add_item(client_id, [])
 
@@ -26,15 +26,13 @@ class DBUsers(object):
         assert db_name != self.db_name, "Client is never allowed to access server!"
         allowed_dbs = self.db_actions.get_key_value(client_id)
         if db_name not in allowed_dbs:
-            logging.debug(f"Allowing client {client_id} to access db {db_name}")
+            logging.info(f"Allowing client {client_id} to access db {db_name}")
             allowed_dbs.append(db_name)
             self.db_actions.set_value(client_id, allowed_dbs)
 
     def check_client_permissions(self, client_id, db_name):
         allowed_dbs = self.db_actions.get_key_value(client_id)
-        logging.debug("HERE1")
         if not isinstance(allowed_dbs, list):
             return False
-        logging.debug("HERE2")
-        logging.debug(allowed_dbs)
+
         return db_name in allowed_dbs

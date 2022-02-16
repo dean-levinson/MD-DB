@@ -34,16 +34,21 @@ class Client(object):
 
         await self._init_conn(add_user, add_db_permissions)
 
-        self.sync_task = asyncio.create_task(self._sync_with_remote())
-
         self._is_connected = True
 
-    async def _sync_with_remote(self):
-        while True:
-            if self.reader:
-                action = await self.reader.read()
-                logging.debug(f'client {self.client_id} got action from server')
-                await self.db_actions.handle_protobuf(action)
+    async def disconnect(self):
+        self.writer.close()
+        await self.writer.wait_closed()
+
+    async def sync_with_remote(self):
+        try:
+            while True:
+                if self.reader:
+                    action = await self.reader.read()
+                    logging.debug(f'client {self.client_id} got action from server')
+                    await self.db_actions.handle_protobuf(action)
+        except asyncio.CancelledError:
+            pass
 
     async def _init_conn(self, add_user=False, add_db_permissions=False):
         if add_user:
