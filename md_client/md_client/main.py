@@ -6,6 +6,7 @@ import sys
 import asyncio
 import logging
 import threading
+from concurrent import futures
 import IPython
 import termcolor
 
@@ -30,12 +31,18 @@ def db_backend(loop: asyncio.AbstractEventLoop, client: Client):
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
     asyncio.set_event_loop(loop)
-    loop.call_soon(lambda: asyncio.create_task(run(client)))
     loop.run_forever()
 
     tasks = asyncio.tasks.all_tasks(loop)
     for t in [t for t in tasks if (t.done() or t.cancelled())]:
         loop.run_until_complete(t)
+
+
+def kill_event_loop(loop):
+    loop.call_soon_threadsafe(loop.stop)
+    for task in asyncio.tasks.all_tasks(loop):
+        task.cancel()
+
 
 @click.command()
 @click.option("--host", "-h", type=str, required=True)
@@ -52,6 +59,16 @@ def main(host, port, dbname, dbdir):
     thread = threading.Thread(target=db_backend, args=(loop, client))
     thread.start()
 
+    handler = asyncio.run_coroutine_threadsafe(run(client), loop)
+    
+    # Ugly hack..
+    try:
+        print(handler.exception(0.125))
+        kill_event_loop(loop)
+        return
+    except futures.TimeoutError:
+        pass
+
     banner = termcolor.colored("\nWelcome to MD-DB!", "green", attrs=["bold"])
     banner2 = termcolor.colored("Use client.* functions\n", "white", attrs=["bold"])
     config = Config()
@@ -66,8 +83,6 @@ def main(host, port, dbname, dbdir):
         config=config
     )
     
-    loop.call_soon_threadsafe(loop.stop)
-    for task in asyncio.tasks.all_tasks(loop):
-        task.cancel()
+    kill_event_loop(loop)
 
     
