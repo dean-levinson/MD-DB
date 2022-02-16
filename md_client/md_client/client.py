@@ -11,7 +11,7 @@ from typing import Optional
 
 
 class Client(object):
-    def __init__(self, addr, db_name, client_id, channel: asyncio.Queue, db_directory=None):
+    def __init__(self, addr, db_name, client_id, channel: asyncio.Queue=None, db_directory=None):
         self.reader = None  # type: Optional[asyncio.StreamReader]
         self.writer = None  # type: Optional[asyncio.StreamWriter]
         self.hostname, self.port = addr
@@ -22,6 +22,7 @@ class Client(object):
         self.db_actions = MDActions(db_directory, db_name, self.channel, is_client=True)
         self.sync_task = None
         self._is_connected = False
+        self.pulled_db = False
 
     async def connect(self, add_user=False, add_db_permissions=False):
         if self._is_connected:
@@ -78,15 +79,19 @@ class Client(object):
         await self.send_protobuf(message)
 
         message = md_pb2.InitConn()
-        message.ParseFromString(await self.reader.read())
+        data = await self.reader.read()
+        message.ParseFromString(data)
         if not message.action_type == InitConnActions.GET_DB_STATE:
+            logging.info(f"mwssage: {data}")
             raise UnexpectedAction()
         return message.state
 
     async def pull_db(self):
-        db_hash = get_db_md5(os.path.join(self.db_directory, self.db_name))
+        db_path = os.path.join(self.db_directory, self.db_name)
+        db_hash = get_db_md5(db_path)
         while not await self._check_hash(db_hash):
             logging.info("DBS not matched!")
+            self.pulled_db = True
             message = md_pb2.InitConn(action_type=InitConnActions.GET_DB)
             await self.send_protobuf(message)
 
@@ -95,9 +100,9 @@ class Client(object):
             if not message.action_type == InitConnActions.GET_DB:
                 raise UnexpectedAction()
 
-            with open(os.path.join(self.db_directory, self.db_name), 'wb') as f:
+            with open(db_path, 'wb') as f:
                 f.write(message.db_file)
-            db_hash = get_db_md5(self.db_name)
+            db_hash = get_db_md5(db_path)
 
     async def send_protobuf(self, protobuf):
         if isinstance(protobuf, (str, bytes)):

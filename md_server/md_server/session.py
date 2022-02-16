@@ -78,6 +78,7 @@ class Session(object):
     @validate_args_kwargs(['db_hash'])
     def handle_check_db_hash(self, *args, **kwargs):
         self.is_check_hash = self._check_db_md5(kwargs['db_hash'])
+        self.checked_state = False
 
     async def handle_get_db_state(self, *args, **kwargs):
         message = md_pb2.InitConn(action_type=InitConnActions.GET_DB_STATE, state=self.is_check_hash)

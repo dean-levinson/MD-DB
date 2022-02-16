@@ -1,6 +1,5 @@
 import ast
 import asyncio
-import functools
 from mdlib.md_pb2 import Actions, DBResult, Results
 
 from md_client.client import Client
@@ -24,8 +23,7 @@ class ClientActions(object):
         """
         Add item to the DB
         """
-        func = functools.partial(self.__add_item_inner, key, value)
-        asyncio.run_coroutine_threadsafe(func(), self.__loop)
+        asyncio.run_coroutine_threadsafe(self.__add_item_inner(key, value), self.__loop)
         db_result = asyncio.run_coroutine_threadsafe(self.__channel.get(), self.__loop).result(5)
         self.__handle_result(db_result)
 
@@ -33,8 +31,7 @@ class ClientActions(object):
         """
         Delete item from the DB
         """
-        func = functools.partial(self.__delete_item_inner, key)
-        asyncio.run_coroutine_threadsafe(func(), self.__loop)
+        asyncio.run_coroutine_threadsafe(self.__delete_item_inner(key), self.__loop)
         db_result = asyncio.run_coroutine_threadsafe(self.__channel.get(), self.__loop).result(5)
         self.__handle_result(db_result)
 

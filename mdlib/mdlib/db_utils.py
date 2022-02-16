@@ -21,7 +21,7 @@ class MDActions(object):
     for md_server - Change the local db.
     """
 
-    def __init__(self, db_directory, db_name, channel, is_client=False):
+    def __init__(self, db_directory, db_name, channel=None, is_client=False):
         self.db_directory = db_directory
         self.db_name = db_name
         self.db_path = os.path.join(self.db_directory, self.db_name)
@@ -69,7 +69,8 @@ class MDActions(object):
                 # and the task the user scheduled through the IPython
         elif message.message_type == MessageTypes.DB_RESULT:
             logging.info(f"Result of last operation: {message.db_result.result}")
-            await self.channel.put(message.db_result)
+            if self.channel is not None:
+                await self.channel.put(message.db_result)
             
 
     def _get_client_request(self, action_type, key=None, value=None):
