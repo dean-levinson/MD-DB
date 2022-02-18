@@ -63,10 +63,6 @@ class MDActions(object):
                 case Actions.DELETE_DB:
                     self.delete_db()
 
-                # TODO: Should add something like Action.GET_ALL_KEYS_RESULTS only for the clinet
-                # to allow getting data back from the server.
-                # Needs to be implemented with async queue between the sync_with_remote task
-                # and the task the user scheduled through the IPython
         elif message.message_type == MessageTypes.DB_RESULT:
             logging.info(f"Result of last operation: {message.db_result.result}")
             if self.channel is not None:

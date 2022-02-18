@@ -12,8 +12,8 @@ from typing import Optional
 
 class Client(object):
     def __init__(self, addr, db_name, client_id, channel: asyncio.Queue=None, db_directory=None):
-        self.reader = None  # type: Optional[asyncio.StreamReader]
-        self.writer = None  # type: Optional[asyncio.StreamWriter]
+        self.reader: Optional[LengthReader] = None
+        self.writer: Optional[LengthWriter] = None
         self.hostname, self.port = addr
         self.db_name = db_name
         self.client_id = client_id

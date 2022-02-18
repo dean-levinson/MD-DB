@@ -1,6 +1,5 @@
 import setuptools
 
-
 setuptools.setup(
     name="md_server",
     version="0.0.1",

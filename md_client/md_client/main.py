@@ -1,7 +1,4 @@
-from email.policy import default
 import click
-import functools
-import random
 import sys
 import asyncio
 import logging
@@ -14,8 +11,8 @@ from md_client.client import Client
 from md_client.client_actions import ClientActions
 from traitlets.config.loader import Config
 
-
 logging.basicConfig(level=logging.ERROR, format="[%(levelname)s]: %(message)s")
+
 
 async def run(c: Client):
     try:
@@ -26,10 +23,6 @@ async def run(c: Client):
 
 
 def db_backend(loop: asyncio.AbstractEventLoop, client: Client):
-    # Fixes Windows errors while running from cmd
-    if sys.version_info[0] == 3 and sys.version_info[1] >= 8 and sys.platform.startswith('win'):
-        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-
     asyncio.set_event_loop(loop)
     loop.run_forever()
 
@@ -45,23 +38,28 @@ def kill_event_loop(loop):
 
 
 @click.command()
+@click.option("--client-id", "-c", type=int, required=True, default=".")
 @click.option("--host", "-h", type=str, required=True)
 @click.option("--port", "-p", type=int, required=True)
 @click.option("--dbname", "-d", type=str, required=True)
 @click.option("--dbdir", type=str, required=False, default=".")
-def main(host, port, dbname, dbdir):
-    # Create the actual db event loop and pass i to the thread
+def main(client_id, host, port, dbname, dbdir):
+    # Fixes Windows errors while running from cmd
+    if sys.version_info[0] == 3 and sys.version_info[1] >= 8 and sys.platform.startswith('win'):
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
+    # Create the actual db event loop and pass it to the thread
     loop = asyncio.new_event_loop()
     channel = asyncio.Queue()
-    client_id = random.randint(1, 5000)
+    client_id = client_id
     client = Client((host, port), dbname, client_id, channel, db_directory=dbdir)
 
     thread = threading.Thread(target=db_backend, args=(loop, client))
     thread.start()
 
     handler = asyncio.run_coroutine_threadsafe(run(client), loop)
-    
-    # Ugly hack..
+
+    # In case connect didn't work for 0.125 seconds, kill event_loop
     try:
         print(handler.exception(0.125))
         kill_event_loop(loop)
@@ -82,7 +80,5 @@ def main(host, port, dbname, dbdir):
         argv=[],
         config=config
     )
-    
-    kill_event_loop(loop)
 
-    
+    kill_event_loop(loop)

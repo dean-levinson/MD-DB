@@ -3,11 +3,9 @@ import asyncio
 import inspect
 import logging
 from collections import namedtuple
-from unicodedata import name
 from mdlib import md_pb2
 from mdlib.md_pb2 import InitConnActions, Results, DBResult
 from mdlib.exceptions import InvalidAction
-from mdlib.md_pb2 import INIT_DONE
 from mdlib.md_pb2 import DBMessage, MessageTypes, Results
 from mdlib.socket_utils import LengthReader, LengthWriter
 from mdlib.db_utils import get_db_md5, MDActions, EXCEPTIONS_TO_RESULT
@@ -15,6 +13,7 @@ from mdlib.exceptions import ClientNotAllowed, KeyDoesNotExists, KeyAlreadyExist
 
 Handler = namedtuple("Handler", ["handler", "is_async"])
 ExceptionTuple = namedtuple("ExceptionTuple", ["should_raise", "exception_type"])
+
 
 def validate_args_kwargs(arguments):
     def decorator(func):
@@ -24,18 +23,24 @@ def validate_args_kwargs(arguments):
                     raise ValueError("{arg} must be in kwargs")
 
             return func(*args, **kwargs)
+
         return validator
+
     return decorator
 
+
 class Session(object):
-    def __init__(self, server, reader: asyncio.StreamReader, writer: asyncio.StreamWriter, directory: str):
+    def __init__(self, server, reader: asyncio.StreamReader, writer: asyncio.StreamWriter, directory: str,
+                 sessions: dict, db_sessions: dict):
         self.server = server
         self.reader = LengthReader(reader)
         self.writer = LengthWriter(writer)
         self.client_id = None
         self.db_name = None
-        self.db_actions = None # can exist only after db_name is known
+        self.db_actions = None  # can exist only after db_name is known
         self.directory = directory
+        self.server_sessions = sessions
+        self.server_db_sessions = db_sessions
 
         self.user_verified = False
         self.is_check_hash = False
@@ -74,6 +79,8 @@ class Session(object):
 
         logging.info(f"Client {self.client_id} connected to db {self.db_name}")
         self.is_user_verified = True
+        self.server_sessions[self.client_id] = self
+        self.server_db_sessions.setdefault(self.db_name, []).append(self)
 
     @validate_args_kwargs(['db_hash'])
     def handle_check_db_hash(self, *args, **kwargs):
@@ -105,8 +112,8 @@ class Session(object):
                       if not k[0].startswith('_') or not inspect.ismethod(k[1])}
 
             if message.action_type not in self.handlers.keys():
-                raise InvalidAction(f"Unknonw action type: {message.action_type}")
-            
+                raise InvalidAction(f"Unknown action type: {message.action_type}")
+
             handler = self.handlers[message.action_type].handler
             is_async = self.handlers[message.action_type].is_async
 
@@ -126,18 +133,17 @@ class Session(object):
         self.db_actions = MDActions(self.server.directory, self.db_name, None)
         while True:
             request = await self.reader.read()
-            message = DBMessage(message_type=MessageTypes.DB_RESULT, 
+            message = DBMessage(message_type=MessageTypes.DB_RESULT,
                                 db_result=DBResult(result=Results.SUCCESS))
-            
+
             try:
                 result = await self.db_actions.handle_protobuf(request)
                 message.db_result.result_value = str(result)
             except Exception as e:
                 message.db_result.result = EXCEPTIONS_TO_RESULT[type(e)]
-            
+
             await self.send_protobuf(message)
-            # TODO:
-            # self.server.handle_session_request(self.db_name, request)
+            # TODO: self.server.handle_session_request(self.db_name, request)
 
     def _check_db_md5(self, client_db_hash):
         db_hash = get_db_md5(os.path.join(self.directory, self.db_name))

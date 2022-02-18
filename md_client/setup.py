@@ -1,6 +1,5 @@
 import setuptools
 
-
 setuptools.setup(
     name="md_client",
     version="0.0.1",
