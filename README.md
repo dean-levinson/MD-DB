@@ -15,8 +15,20 @@ Required python3.10+
 pip install -r requirements.txt
 ```
 
-* Run the main.py files (outside the MD-DB folder):
+* Run the main.py files:
+When running for the first time, you need to add an admin user.
+Only admin users can add permissions to users:
+
 ```cmd
-md_server -h 127.0.0.1 -p 8888
-md_client -h 127.0.0.1 -p 8888 -d mydb --client-id 22323
+md_server -h 127.0.0.1 -p 8888 --add-admin-user --admin-client-id <admin-id> --admin-password <admin-password>
+```
+
+And then run the client:
+```cmd
+md_client -h 127.0.0.1 -p 8888 -d users --client-id <admin-id>
+```
+
+You also can create new user:
+```cmd
+md_client -h 127.0.0.1 -p 8888 -d mydb --client-id <client-id> --add-user
 ```

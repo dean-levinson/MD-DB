@@ -5,10 +5,14 @@ import logging
 
 
 class DBUsers(object):
-    def __init__(self, directory):
+    def __init__(self, directory, add_admin_params):
         self.db_name = 'users'
         self.directory = directory
         self.db_actions = MDActions(self.directory, self.db_name, channel=None)
+
+        if add_admin_params.should_add:
+            self.add_user(add_admin_params.client_id, add_admin_params.password, is_admin=True)
+            self.add_db_permission(add_admin_params.client_id, self.db_name)
 
     def get_client_info(self, client_id):
         try:
@@ -24,9 +28,9 @@ class DBUsers(object):
     def is_correct_password(self, client_id, password):
         return self.get_client_info(client_id)['password'] == password
 
-    def add_user(self, client_id, password):
+    def add_user(self, client_id, password, is_admin=False):
         try:
-            client_info = self.get_client_info(client_id)
+            self.get_client_info(client_id)
             logging.error(f"Client ID {client_id} already exist!")
             raise ClientIDAlreadyExists()
         except ClientIDDoesNotExist:
@@ -34,7 +38,7 @@ class DBUsers(object):
             logging.info(f"Adding user {client_id}!")
             self.db_actions.add_item(client_id, {
                 'password': password,
-                'is_admin': False,
+                'is_admin': is_admin,
                 'allowed_dbs': []
             })
             logging.debug(f'User {client_id} was added!')
@@ -47,11 +51,17 @@ class DBUsers(object):
             return False
 
     def add_db_permission(self, client_id, db_name):
-        if db_name == self.db_name:
-            logging.error("Clients is never allowed to access user's db!")
+        client_info = self.get_client_info(client_id)
+        is_admin = client_info['is_admin']
+
+        if not is_admin:
+            logging.error("Only admins can add permissions!")
             raise ClientNotAllowed()
 
-        client_info = self.get_client_info(client_id)
+        if db_name == self.db_name and not is_admin:
+            logging.error("Only admins can access users DB!")
+            raise ClientNotAllowed()
+
         if db_name not in client_info['allowed_dbs']:
             logging.info(f"Allowing client {client_id} to access db {db_name}")
             client_info['allowed_dbs'].append(db_name)
