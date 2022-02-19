@@ -50,7 +50,6 @@ class Session(object):
         self.handlers = {
             InitConnActions.LOGIN: Handler(self.handle_login, True),
             InitConnActions.ADD_USER: Handler(self.handle_add_user, True),
-            InitConnActions.ADD_PERMISSIONS: Handler(self.handle_add_permissions, True),
             InitConnActions.CHECK_DB_HASH: Handler(self.handle_check_db_hash, False),
             InitConnActions.GET_DB_STATE: Handler(self.handle_get_db_state, True),
             InitConnActions.GET_DB: Handler(self.handle_get_db, True),

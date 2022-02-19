@@ -26,7 +26,7 @@ class Client(object):
         self._is_connected = False
         self.pulled_db = False
 
-    async def connect(self, add_user=False, add_db_permissions=False):
+    async def connect(self, add_user=False):
         if self._is_connected:
             raise AlreadyConnected()
 
@@ -35,7 +35,7 @@ class Client(object):
         self.reader = LengthReader(reader)
         self.writer = LengthWriter(writer)
 
-        await self._init_conn(add_user, add_db_permissions)
+        await self._init_conn(add_user)
         self._is_connected = True
         return True
 
@@ -62,11 +62,9 @@ class Client(object):
         await self.send_protobuf(message)
         await self.__get_init_conn_result()
 
-    async def _init_conn(self, add_user=False, add_db_permissions=False):
+    async def _init_conn(self, add_user=False):
         if add_user:
             await self._add_user()
-        if add_db_permissions:
-            await self._add_db_permissions()
 
         await self.login()
         await self.pull_db()

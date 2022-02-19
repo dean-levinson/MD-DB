@@ -6,11 +6,11 @@ from md_server.users import DBUsers
 
 
 class Server(object):
-    def __init__(self, directory):
+    def __init__(self, directory, add_admin_params):
         self.sessions = {}
         self.db_sessions = {}
         self.directory = directory
-        self.users = DBUsers(self.directory)
+        self.users = DBUsers(self.directory, add_admin_params)
 
     async def handle_conn(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
         peer = writer.get_extra_info('peername')

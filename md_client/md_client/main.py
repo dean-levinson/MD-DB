@@ -38,9 +38,8 @@ def kill_event_loop(thread, loop):
 @click.option("--dbname", "-d", type=str, required=True)
 @click.option("--dbdir", type=str, required=False, default=".")
 @click.option("--add-user", type=bool, required=False, is_flag=True, default=False)
-@click.option("--add-permissions", type=bool, required=False, is_flag=True, default=False)
 @click.option("--password", type=str, required=True)
-def main(client_id, host, port, dbname, dbdir, add_user, add_permissions, password):
+def main(client_id, host, port, dbname, dbdir, add_user, password):
     # Fixes Windows errors while running from cmd
     if sys.version_info[0] == 3 and sys.version_info[1] >= 8 and sys.platform.startswith('win'):
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
@@ -54,13 +53,11 @@ def main(client_id, host, port, dbname, dbdir, add_user, add_permissions, passwo
     thread = threading.Thread(target=db_backend, args=(loop,))
     thread.start()
 
-    # handler = asyncio.run_coroutine_threadsafe(run(client, add_user, add_permissions), loop)
-    
-    connect_handler = asyncio.run_coroutine_threadsafe(client.connect(add_user, add_permissions), loop)
-    
+    connect_handler = asyncio.run_coroutine_threadsafe(client.connect(add_user), loop)
+
     try:
         # Wait up to 5 seconds to the server to connect
-        connection_result = connect_handler.result(5)
+        connect_handler.result(5)
     except Exception as e:
         logging.exception(e)
         kill_event_loop(thread, loop)
@@ -68,7 +65,7 @@ def main(client_id, host, port, dbname, dbdir, add_user, add_permissions, passwo
         logging.error(f"Error while trying to connect to server: {error}")
         return
 
-    client_handler = asyncio.run_coroutine_threadsafe(client.sync_with_remote(), loop)
+    asyncio.run_coroutine_threadsafe(client.sync_with_remote(), loop)
 
     banner = termcolor.colored("\nWelcome to MD-DB!", "green", attrs=["bold"])
     banner2 = termcolor.colored("Use client.* functions\n", "white", attrs=["bold"])
