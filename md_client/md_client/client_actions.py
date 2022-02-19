@@ -31,6 +31,7 @@ class ClientActions(object):
             channel_coroutine.cancel()
             task_coroutine.cancel()
             logging.error(f'The task coroutine raised an exception: {task_coroutine.exception()!r}')
+            raise
 
     def add_item(self, key, value):
         """
