@@ -165,7 +165,7 @@ class Session(object):
 
             try:
                 result = await self.db_actions.handle_protobuf(request)
-                logging.error(f"Result is: {result}")
+                logging.debug(f"Result is: {result}")
                 if result is not None:
                     message.db_value.value_type, message.db_value.value = result
             except Exception as e:
