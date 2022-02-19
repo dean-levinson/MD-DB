@@ -23,15 +23,15 @@ class ClientActions(object):
             db_result = channel_coroutine.result(5)
             if db_result.result != Results.SUCCESS:
                 raise RESULTS_TO_EXCEPTIONS[db_result.result]
-
             return db_result
 
         except concurrent.futures.TimeoutError as e:
             logging.error('The coroutine took too long, cancelling the task...')
             channel_coroutine.cancel()
             task_coroutine.cancel()
-            logging.error(f'The task coroutine raised an exception: {task_coroutine.exception()!r}')
-            raise
+            exc = task_coroutine.exception()
+            logging.error(f'The task coroutine raised an exception: {exc}')
+            raise exc
 
     def add_item(self, key, value):
         """
