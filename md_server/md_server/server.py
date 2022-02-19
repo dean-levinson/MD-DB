@@ -21,7 +21,8 @@ class Server(object):
 
         try:
             await session.handle_session()
-        except Exception:
+        except Exception as e:
+            logging.exception(e)
             writer.close()
             await writer.wait_closed()
         finally:
@@ -32,10 +33,10 @@ class Server(object):
                 if len(self.db_sessions[session.db_name]) == 0:
                     self.db_sessions.pop(session.db_name)
 
-    def handle_session_request(self, db_name, request):
+    async def handle_session_request(self, db_name, request):
         # Local db was updated in Session
 
         # Update other clients dbs
         logging.debug(f"Updating {db_name}")
         for session in self.db_sessions[db_name]:
-            session.update_client(request)
+            await session.update_client(request)

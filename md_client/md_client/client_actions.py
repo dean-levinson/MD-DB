@@ -5,11 +5,12 @@ from mdlib.md_pb2 import Actions, DBResult, Results
 from md_client.client import Client
 from mdlib.db_utils import RESULTS_TO_EXCEPTIONS
 
+
 class ClientActions(object):
     """
-    TODO: All the functions here are duplicated.. 
-    need to implement dynamic functions with lambdas or something
+    All the functions here are duplicated... In order to change this we need to implement code in runtime...
     """
+
     def __init__(self, loop, client: Client, channel: asyncio.Queue, db_name, db_directory):
         self.__loop: asyncio.AbstractEventLoop = loop
         self.__client = client

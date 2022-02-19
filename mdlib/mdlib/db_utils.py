@@ -135,7 +135,7 @@ class MDActions(object):
     def get_key_value(self, key):
         key = str(key)
         if key not in self.db_data.keys():
-            return None
+            raise KeyDoesNotExists()
         return self.db_data[key]
 
     @db_transaction(write_to_db=False, action_type=Actions.GET_ALL_KEYS)

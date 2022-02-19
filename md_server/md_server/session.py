@@ -138,12 +138,13 @@ class Session(object):
 
             try:
                 result = await self.db_actions.handle_protobuf(request)
+                logging.error(f"Result is: {result}")
                 message.db_result.result_value = str(result)
             except Exception as e:
                 message.db_result.result = EXCEPTIONS_TO_RESULT[type(e)]
 
             await self.send_protobuf(message)
-            # TODO: self.server.handle_session_request(self.db_name, request)
+            await self.server.handle_session_request(self.db_name, bytes(request))
 
     def _check_db_md5(self, client_db_hash):
         db_hash = get_db_md5(os.path.join(self.directory, self.db_name))
@@ -153,7 +154,9 @@ class Session(object):
         await self.send_protobuf(request)
 
     async def send_protobuf(self, protobuf):
-        if isinstance(protobuf, (str, bytes)):
+        if isinstance(protobuf, (str, bytes, bytearray)):
             # protobuf was already serialized
             await self.writer.write(protobuf)
-        await self.writer.write(protobuf.SerializeToString())
+        else:
+            await self.writer.write(protobuf.SerializeToString())
+0

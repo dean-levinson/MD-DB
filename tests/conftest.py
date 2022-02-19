@@ -2,6 +2,7 @@ import os
 import pytest
 import pytest_asyncio
 import asyncio
+import sys
 
 from md_server.server import Server
 from md_client.client import Client
@@ -23,7 +24,10 @@ async def empty_db():
 
 @pytest_asyncio.fixture
 def mddb_client():
-    c = Client(TEST_HOSTNAME, TEST_DB_NAME, 12345, db_directory=TEST_DIR)
+    if sys.version_info[0] == 3 and sys.version_info[1] >= 8 and sys.platform.startswith('win'):
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+    c = Client((TEST_HOSTNAME, TESTS_PORT), client_id=1234, db_name=TEST_DB_NAME, db_directory=TEST_DIR)
+
     yield c
 
 

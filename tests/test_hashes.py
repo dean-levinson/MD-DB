@@ -15,8 +15,8 @@ async def test_equal_hashes(mddb_server, mddb_client):
 
 @pytest.mark.asyncio
 async def test_not_equal_hashes(mddb_server, mddb_client):
-    mddb_client.db_directory = '/tmp/'
-    with open('/tmp/test_db', 'w') as f:
+    mddb_client.db_directory = '.'
+    with open('test_db2', 'w') as f:
         json.dump({'bla': 1}, f)
 
     await mddb_client.connect(add_db_permissions=True)

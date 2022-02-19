@@ -12,7 +12,7 @@ class DBUsers(object):
 
     def add_user(self, client_id):
         # Verify username does not exist
-        if self.db_actions.get_key_value(client_id) is not None:
+        if self.is_user_exists(client_id):
             logging.error("Username already exist!")
             raise ClientIDAlreadyExists()
 
@@ -20,7 +20,12 @@ class DBUsers(object):
         self.db_actions.add_item(client_id, [])
 
     def is_user_exists(self, client_id: int):
-        return self.db_actions.get_key_value(client_id) is not None
+        try:
+            self.db_actions.get_key_value(client_id)
+            return True
+        except KeyDoesNotExists:
+            return False
+
 
     def add_db_permission(self, client_id, db_name):
         assert db_name != self.db_name, "Client is never allowed to access server!"
