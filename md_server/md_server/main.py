@@ -1,3 +1,4 @@
+import sys
 import click
 import asyncio
 import logging
@@ -6,7 +7,11 @@ from md_server.server import Server
 
 logging.basicConfig(level=logging.INFO, format="[%(levelname)s]: %(message)s")
 
+
 async def run(host, port, dbdir):
+    if sys.version_info[0] == 3 and sys.version_info[1] >= 8 and sys.platform.startswith('win'):
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
     s = Server(dbdir)
     server = await asyncio.start_server(
         s.handle_conn, host, port)
@@ -16,6 +21,7 @@ async def run(host, port, dbdir):
 
     async with server:
         await server.serve_forever()
+
 
 @click.command()
 @click.option("--host", "-h", type=str, required=True)

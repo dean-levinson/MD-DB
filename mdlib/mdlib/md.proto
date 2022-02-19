@@ -16,6 +16,9 @@ enum Results {
     SUCCESS = 0;
     KEY_DOES_NOT_EXISTS = 1;
     KEY_ALREADY_EXISTS = 2;
+    USER_ALREADY_EXISTS = 3;
+    USER_DOES_NOT_EXISTS = 4;
+    USER_NOT_ALLOWED = 5;
 }
 
 message DBResult {

@@ -22,12 +22,12 @@ class Server(object):
         try:
             await session.handle_session()
         except Exception as e:
-            logging.exception(e)
+            logging.exception(f"Exception {e}.\nClosing client connection!")
             writer.close()
             await writer.wait_closed()
         finally:
             logging.info(f"Client {session.client_id} was disconnected")
-            if session.client_id is not None and session.db_name is not None:
+            if session.is_user_verified:
                 self.sessions.pop(session.client_id)
                 self.db_sessions[session.db_name].remove(session)
                 if len(self.db_sessions[session.db_name]) == 0:

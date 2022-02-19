@@ -22,5 +22,9 @@ class ClientIDAlreadyExists(Exception):
     pass
 
 
+class ClientIDDoesNotExist(Exception):
+    pass
+
+
 class ClientNotAllowed(Exception):
     pass

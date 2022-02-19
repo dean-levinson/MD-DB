@@ -1,6 +1,5 @@
 import struct
 import asyncio
-import logging
 
 
 class LengthReader(asyncio.StreamReader):

@@ -4,13 +4,16 @@ import json
 import hashlib
 import logging
 import functools
-from mdlib.md_pb2 import DBAction, Actions, DBMessage, MessageTypes, Results
+from mdlib.md_pb2 import Actions, DBMessage, MessageTypes, Results
 from mdlib.exceptions import *
 
 RESULTS_TO_EXCEPTIONS = {
     Results.SUCCESS: None,
     Results.KEY_DOES_NOT_EXISTS: KeyDoesNotExists,
-    Results.KEY_ALREADY_EXISTS: KeyAlreadyExists
+    Results.KEY_ALREADY_EXISTS: KeyAlreadyExists,
+    Results.USER_ALREADY_EXISTS: ClientIDAlreadyExists,
+    Results.USER_DOES_NOT_EXISTS: ClientIDDoesNotExist,
+    Results.USER_NOT_ALLOWED: ClientNotAllowed,
 }
         
 EXCEPTIONS_TO_RESULT = {v: k for k, v in RESULTS_TO_EXCEPTIONS.items()}

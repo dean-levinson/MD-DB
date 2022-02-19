@@ -1,9 +1,10 @@
 import os
+import functools
 from mdlib.socket_utils import LengthReader, LengthWriter
-from mdlib.db_utils import MDActions, get_db_md5
+from mdlib.db_utils import MDActions, get_db_md5, RESULTS_TO_EXCEPTIONS
 from mdlib.exceptions import *
 from mdlib import md_pb2
-from mdlib.md_pb2 import InitConnActions
+from mdlib.md_pb2 import InitConnActions, Results, DBResult
 
 import asyncio
 import logging
@@ -11,7 +12,7 @@ from typing import Optional
 
 
 class Client(object):
-    def __init__(self, addr, db_name, client_id, channel: asyncio.Queue=None, db_directory=None):
+    def __init__(self, addr, db_name, client_id, channel: asyncio.Queue = None, db_directory=None):
         self.reader: Optional[LengthReader] = None
         self.writer: Optional[LengthWriter] = None
         self.hostname, self.port = addr
@@ -63,14 +64,18 @@ class Client(object):
     async def _send_db_info(self):
         message = md_pb2.InitConn(action_type=InitConnActions.DB_INFO, client_id=self.client_id, db_name=self.db_name)
         await self.send_protobuf(message)
+        await self.__get_init_conn_result()
 
     async def _add_user(self):
         message = md_pb2.InitConn(action_type=InitConnActions.ADD_USER, client_id=self.client_id)
         await self.send_protobuf(message)
+        await self.__get_init_conn_result()
 
     async def _add_db_permissions(self):
-        message = md_pb2.InitConn(action_type=InitConnActions.ADD_PERMISSIONS, client_id=self.client_id, db_name=self.db_name)
+        message = md_pb2.InitConn(action_type=InitConnActions.ADD_PERMISSIONS, client_id=self.client_id,
+                                  db_name=self.db_name)
         await self.send_protobuf(message)
+        await self.__get_init_conn_result()
 
     async def _check_hash(self, db_hash):
         message = md_pb2.InitConn(action_type=InitConnActions.CHECK_DB_HASH, db_hash=db_hash)
@@ -82,7 +87,7 @@ class Client(object):
         data = await self.reader.read()
         message.ParseFromString(data)
         if not message.action_type == InitConnActions.GET_DB_STATE:
-            logging.info(f"mwssage: {data}")
+            logging.info(f"message: {data}")
             raise UnexpectedAction()
         return message.state
 
@@ -109,3 +114,12 @@ class Client(object):
             # protobuf was already serialized
             await self.writer.write(protobuf)
         await self.writer.write(protobuf.SerializeToString())
+
+    async def __get_init_conn_result(self):
+        message = md_pb2.DBResult()
+        data = await self.reader.read()
+        message.ParseFromString(data)
+        if message.result != Results.SUCCESS:
+            logging.error('Got exception in init_conn')
+            import ipdb; ipdb.set_trace()
+            raise RESULTS_TO_EXCEPTIONS[message.result]

@@ -2,6 +2,7 @@ import os
 import asyncio
 import inspect
 import logging
+import functools
 from collections import namedtuple
 from mdlib import md_pb2
 from mdlib.md_pb2 import InitConnActions, Results, DBResult
@@ -9,7 +10,7 @@ from mdlib.exceptions import InvalidAction
 from mdlib.md_pb2 import DBMessage, MessageTypes, Results
 from mdlib.socket_utils import LengthReader, LengthWriter
 from mdlib.db_utils import get_db_md5, MDActions, EXCEPTIONS_TO_RESULT
-from mdlib.exceptions import ClientNotAllowed, KeyDoesNotExists, KeyAlreadyExists
+from mdlib.exceptions import *
 
 Handler = namedtuple("Handler", ["handler", "is_async"])
 ExceptionTuple = namedtuple("ExceptionTuple", ["should_raise", "exception_type"])
@@ -28,6 +29,20 @@ def validate_args_kwargs(arguments):
 
     return decorator
 
+def send_init_conn_result():
+    async def decorator(func):
+        @functools.wraps(func)
+        async def wrapper(self, *args, **kwargs):
+            message = md_pb2.DBResult()
+            try:
+                func(self, *args, **kwargs)
+                message.result = Results.SUCCESS
+            except Exception as e:
+                message.result = EXCEPTIONS_TO_RESULT[type(e)]
+            await self.send_protobuf(message)
+        return wrapper
+
+    return decorator
 
 class Session(object):
     def __init__(self, server, reader: asyncio.StreamReader, writer: asyncio.StreamWriter, directory: str,
@@ -42,14 +57,14 @@ class Session(object):
         self.server_sessions = sessions
         self.server_db_sessions = db_sessions
 
-        self.user_verified = False
+        self.is_user_verified = False
         self.is_check_hash = False
         self.checked_state = False
 
         self.handlers = {
-            InitConnActions.ADD_USER: Handler(self.handle_add_user, False),
-            InitConnActions.ADD_PERMISSIONS: Handler(self.handle_add_permissions, False),
-            InitConnActions.DB_INFO: Handler(self.handle_db_info, False),
+            InitConnActions.ADD_USER: Handler(self.handle_add_user, True),
+            InitConnActions.ADD_PERMISSIONS: Handler(self.handle_add_permissions, True),
+            InitConnActions.DB_INFO: Handler(self.handle_db_info, True),
             InitConnActions.CHECK_DB_HASH: Handler(self.handle_check_db_hash, False),
             InitConnActions.GET_DB_STATE: Handler(self.handle_get_db_state, True),
             InitConnActions.GET_DB: Handler(self.handle_get_db, True),
@@ -57,30 +72,33 @@ class Session(object):
         }
 
     @validate_args_kwargs(['client_id'])
-    def handle_add_user(self, *args, **kwargs):
+    @send_init_conn_result()
+    async def handle_add_user(self, *args, **kwargs):
         self.server.users.add_user(kwargs['client_id'])
 
     @validate_args_kwargs(['client_id', 'db_name'])
-    def handle_add_permissions(self, *args, **kwargs):
-        if not self.server.users.is_user_exists(kwargs['client_id']):
-            logging.info(f"User {kwargs['client_id']} does not exists, adding it")
-            self.server.users.add_user(kwargs['client_id'])
-
+    @send_init_conn_result()
+    async def handle_add_permissions(self, *args, **kwargs):
         self.server.users.add_db_permission(kwargs['client_id'], kwargs['db_name'])
 
     @validate_args_kwargs(['client_id', 'db_name'])
-    def handle_db_info(self, *args, **kwargs):
+    async def handle_db_info(self, *args, **kwargs):
+        message = md_pb2.DBResult()
         self.client_id = kwargs['client_id']
         self.db_name = kwargs['db_name']
         if not self.server.users.check_client_permissions(self.client_id, self.db_name):
             # TODO: make sure raise closes session and notify client
             logging.info("Client not allowed!")
-            raise ClientNotAllowed()
+            message.result = Results.USER_NOT_ALLOWED
 
-        logging.info(f"Client {self.client_id} connected to db {self.db_name}")
-        self.is_user_verified = True
-        self.server_sessions[self.client_id] = self
-        self.server_db_sessions.setdefault(self.db_name, []).append(self)
+        else:
+            logging.info(f"Client {self.client_id} connected to db {self.db_name}")
+            self.is_user_verified = True
+            self.server_sessions[self.client_id] = self
+            self.server_db_sessions.setdefault(self.db_name, []).append(self)
+            message.result = Results.SUCCESS
+
+        await self.send_protobuf(message)
 
     @validate_args_kwargs(['db_hash'])
     def handle_check_db_hash(self, *args, **kwargs):
@@ -159,4 +177,6 @@ class Session(object):
             await self.writer.write(protobuf)
         else:
             await self.writer.write(protobuf.SerializeToString())
+
+
 0
