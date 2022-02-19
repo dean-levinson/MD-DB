@@ -1,2 +1,0 @@
-class AlreadyConnected(Exception):
-    pass
