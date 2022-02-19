@@ -1,8 +1,11 @@
 import asyncio
 import logging
+import traceback
 
 from md_server.session import Session
 from md_server.users import DBUsers
+
+logging.basicConfig(level=logging.DEBUG, format="[%(levelname)s]: %(message)s")
 
 
 class Server(object):
@@ -23,6 +26,7 @@ class Server(object):
         try:
             await session.handle_session()
         except Exception as e:
+            logging.error(f"Got Exception on {session}! closing session...\n{traceback.format_exc()}")
             writer.close()
             await writer.wait_closed()
         finally:
@@ -37,6 +41,6 @@ class Server(object):
         # Local db was updated in Session
 
         # Update other clients dbs
-        logging.debug(f"Updating {db_name}")
+        logging.debug(f"Updating {db_name} on all clients")
         for session in self.db_sessions[db_name]:
             await session.update_client(request)

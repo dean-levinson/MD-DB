@@ -6,6 +6,7 @@ import threading
 from concurrent import futures
 import IPython
 import termcolor
+import traceback
 
 from md_client.client import Client
 from md_client.client_actions import ClientActions
@@ -64,6 +65,7 @@ def main(client_id, host, port, dbname, dbdir, add_user, add_permissions):
         kill_event_loop(thread, loop)
         error = termcolor.colored(f"{e.__class__.__name__}", "red", attrs=["bold"])
         logging.error(f"Error while trying to connect to server: {error}")
+        logging.error(traceback.format_exc())
         return
 
     client_handler = asyncio.run_coroutine_threadsafe(client.sync_with_remote(), loop)

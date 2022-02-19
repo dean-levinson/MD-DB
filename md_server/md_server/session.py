@@ -2,6 +2,7 @@ import os
 import asyncio
 import inspect
 import logging
+import traceback
 import functools
 from collections import namedtuple
 from mdlib import md_pb2
@@ -29,6 +30,7 @@ def validate_args_kwargs(arguments):
 
     return decorator
 
+
 def send_init_conn_result():
     async def decorator(func):
         @functools.wraps(func)
@@ -43,6 +45,7 @@ def send_init_conn_result():
         return wrapper
 
     return decorator
+
 
 class Session(object):
     def __init__(self, server, reader: asyncio.StreamReader, writer: asyncio.StreamWriter, directory: str,
@@ -82,7 +85,6 @@ class Session(object):
         
         await self.send_protobuf(message)
 
-
     @validate_args_kwargs(['client_id', 'db_name'])
     async def handle_add_permissions(self, *args, **kwargs):
         message = md_pb2.DBResult()
@@ -111,6 +113,10 @@ class Session(object):
                 self.server_sessions[self.client_id] = self
                 self.server_db_sessions.setdefault(self.db_name, []).append(self)
                 message.result = Results.SUCCESS
+
+                # After successful negotiation, creates db_actions
+                self.db_actions = MDActions(self.server.directory, self.db_name, None)
+
         except ClientIDDoesNotExist:
             message.result = Results.USER_DOES_NOT_EXISTS
 
@@ -119,7 +125,8 @@ class Session(object):
     @validate_args_kwargs(['db_hash'])
     def handle_check_db_hash(self, *args, **kwargs):
         self.is_check_hash = self._check_db_md5(kwargs['db_hash'])
-        self.checked_state = False
+        # todo: do we need the line below?
+        # self.checked_state = False
 
     async def handle_get_db_state(self, *args, **kwargs):
         message = md_pb2.InitConn(action_type=InitConnActions.GET_DB_STATE, state=self.is_check_hash)
@@ -137,7 +144,10 @@ class Session(object):
         logging.error("Client does not determine when init is done")
 
     async def _init_conn(self):
-        while (not self.is_check_hash or not self.checked_state) or (not self.is_user_verified):
+        while (not self.is_check_hash or
+               not self.checked_state or
+               not self.is_user_verified):
+
             message = md_pb2.InitConn()
             message.ParseFromString(await self.reader.read())
 
@@ -164,24 +174,29 @@ class Session(object):
 
     async def handle_session(self):
         await self._init_conn()
-        self.db_actions = MDActions(self.server.directory, self.db_name, None)
+
+        if not self.db_actions:
+            raise Exception("Unexpected state... db_actions should be initialized")
+
         while True:
             request = await self.reader.read()
+            logging.debug(f"{self} got request from client")
             message = DBMessage(message_type=MessageTypes.DB_RESULT,
                                 db_result=DBResult(result=Results.SUCCESS))
 
             try:
                 result = await self.db_actions.handle_protobuf(request)
-                logging.error(f"Result is: {result}")
+                logging.debug(f"Result is: {result}")
                 message.db_result.result_value = str(result)
             except Exception as e:
+                logging.error(f"Got Exception on {self} while handling a request!\n{traceback.format_exc()}")
                 message.db_result.result = EXCEPTIONS_TO_RESULT[type(e)]
 
             await self.send_protobuf(message)
             await self.server.handle_session_request(self.db_name, bytes(request))
 
     def _check_db_md5(self, client_db_hash):
-        db_hash = get_db_md5(os.path.join(self.directory, self.db_name))
+        db_hash = get_db_md5(self.db_path)
         return client_db_hash == db_hash
 
     async def update_client(self, request):
@@ -194,5 +209,9 @@ class Session(object):
         else:
             await self.writer.write(protobuf.SerializeToString())
 
+    @property
+    def db_path(self):
+        return os.path.join(self.directory, self.db_name)
 
-0
+    def __str__(self):
+        return f"Session(sever={self.server}, client_id={self.client_id}, db_path={self.db_path})"

@@ -49,6 +49,7 @@ class MDActions(object):
     async def handle_protobuf(self, protobuf_obj):
         message = DBMessage()
         message.ParseFromString(protobuf_obj)
+        logging.debug(f"Parsed message {message}")
 
         if message.message_type == MessageTypes.DB_ACTION:
             action = message.db_action
