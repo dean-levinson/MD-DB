@@ -1,0 +1,68 @@
+syntax = "proto3";
+
+// Not necessary for Python but should still be declared to avoid name collisions
+// in the Protocol Buffers namespace and non-Python languages
+package protoblog;
+
+// Style guide prefers prefixing enum values instead of surrounding
+// with an enclosing message
+
+enum MessageTypes {
+    DB_ACTION = 0;
+    DB_RESULT = 1;
+}
+
+enum Results {
+    SUCCESS = 0;
+    KEY_DOES_NOT_EXISTS = 1;
+    KEY_ALREADY_EXISTS = 2;
+    USER_ALREADY_EXISTS = 3;
+    USER_DOES_NOT_EXISTS = 4;
+    USER_NOT_ALLOWED = 5;
+}
+
+message DBResult {
+    Results result = 1;
+    optional string result_value = 2;
+}
+
+message DBMessage {
+    MessageTypes message_type = 1;
+    optional DBAction db_action = 2;
+    optional DBResult db_result = 3;
+}
+
+enum Actions {
+    ADD_ITEM = 0;
+    SET_VALUE = 1;
+    GET_KEY_VALUE = 2;
+    GET_ALL_KEYS = 3;
+    DELETE_KEY = 4;
+    DELETE_DB = 5;
+}
+
+message DBAction {
+    Actions action_type = 1;
+    optional string key = 2;
+    optional string value = 3;
+}
+
+enum InitConnActions {
+    ADD_USER = 0;
+    ADD_PERMISSIONS = 1;
+    DB_INFO = 2;
+    CHECK_DB_HASH = 3;
+    GET_DB_STATE = 4;
+    GET_DB = 5;
+    INIT_DONE = 6;
+}
+
+message InitConn {
+    InitConnActions action_type = 1;
+    optional string db_name = 2;
+    optional int32 client_id = 3;
+    optional string db_hash = 4;
+    optional bytes db_file = 5;
+    optional bool state = 6;
+}
+
