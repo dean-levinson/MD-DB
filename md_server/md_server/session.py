@@ -72,31 +72,47 @@ class Session(object):
         }
 
     @validate_args_kwargs(['client_id'])
-    @send_init_conn_result()
     async def handle_add_user(self, *args, **kwargs):
-        self.server.users.add_user(kwargs['client_id'])
+        message = md_pb2.DBResult()
+        try:
+            self.server.users.add_user(kwargs['client_id'])
+            message.result = Results.SUCCESS
+        except Exception as e:
+            message.result = EXCEPTIONS_TO_RESULT[type(e)]
+        
+        await self.send_protobuf(message)
+
 
     @validate_args_kwargs(['client_id', 'db_name'])
-    @send_init_conn_result()
     async def handle_add_permissions(self, *args, **kwargs):
-        self.server.users.add_db_permission(kwargs['client_id'], kwargs['db_name'])
+        message = md_pb2.DBResult()
+        try:
+            self.server.users.add_db_permission(kwargs['client_id'], kwargs['db_name'])
+            message.result = Results.SUCCESS
+        except Exception as e:
+            message.result = EXCEPTIONS_TO_RESULT[type(e)]
+        
+        await self.send_protobuf(message)
 
     @validate_args_kwargs(['client_id', 'db_name'])
     async def handle_db_info(self, *args, **kwargs):
         message = md_pb2.DBResult()
         self.client_id = kwargs['client_id']
         self.db_name = kwargs['db_name']
-        if not self.server.users.check_client_permissions(self.client_id, self.db_name):
-            # TODO: make sure raise closes session and notify client
-            logging.info("Client not allowed!")
-            message.result = Results.USER_NOT_ALLOWED
-
-        else:
-            logging.info(f"Client {self.client_id} connected to db {self.db_name}")
-            self.is_user_verified = True
-            self.server_sessions[self.client_id] = self
-            self.server_db_sessions.setdefault(self.db_name, []).append(self)
-            message.result = Results.SUCCESS
+        
+        try:
+            is_user_allowed = self.server.users.check_client_permissions(self.client_id, self.db_name)
+            if not is_user_allowed:
+                logging.info(f"Client {self.client_id} not allowed to access {self.db_name}")
+                message.result = Results.USER_NOT_ALLOWED
+            else:
+                logging.info(f"Client {self.client_id} connected to db {self.db_name}")
+                self.is_user_verified = True
+                self.server_sessions[self.client_id] = self
+                self.server_db_sessions.setdefault(self.db_name, []).append(self)
+                message.result = Results.SUCCESS
+        except ClientIDDoesNotExist:
+            message.result = Results.USER_DOES_NOT_EXISTS
 
         await self.send_protobuf(message)
 

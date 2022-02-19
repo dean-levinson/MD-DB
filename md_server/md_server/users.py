@@ -30,7 +30,7 @@ class DBUsers(object):
         if not self.is_user_exists(client_id):
             logging.error("User does not exist!")
             raise ClientIDDoesNotExist()
-        elif db_name != self.db_name:
+        elif db_name == self.db_name:
             logging.error("Client is never allowed to access user's db!")
             raise ClientNotAllowed()
 
@@ -41,7 +41,13 @@ class DBUsers(object):
             self.db_actions.set_value(client_id, allowed_dbs)
 
     def check_client_permissions(self, client_id, db_name):
-        allowed_dbs = self.is_user_exists(client_id)
+        user_exists = self.is_user_exists(client_id)
+        if not user_exists:
+            raise ClientIDDoesNotExist()
+
+        allowed_dbs = self.db_actions.get_key_value(client_id)
+        logging.error(f"Allowed dbs: {allowed_dbs}")
+
         if not isinstance(allowed_dbs, list):
             return False
 

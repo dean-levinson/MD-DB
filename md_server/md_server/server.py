@@ -11,18 +11,19 @@ class Server(object):
         self.db_sessions = {}
         self.directory = directory
         self.users = DBUsers(self.directory)
+        self.lock = asyncio.Lock()
 
     async def handle_conn(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
         peer = writer.get_extra_info('peername')
         logging.info(f"Got client connection from {peer}")
-        session = Session(self, reader, writer, self.directory, self.sessions, self.db_sessions)
+        session = Session(self, reader, writer, self.directory, self.sessions, 
+                          self.db_sessions, self.lock)
         # TODO: Add support of 2 client_ids to 2 different dbs
         # TODO: Verify that this md_client doesn't have active session already
 
         try:
             await session.handle_session()
         except Exception as e:
-            logging.exception(f"Exception {e}.\nClosing client connection!")
             writer.close()
             await writer.wait_closed()
         finally:

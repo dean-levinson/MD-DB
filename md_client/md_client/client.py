@@ -35,8 +35,8 @@ class Client(object):
         self.writer = LengthWriter(writer)
 
         await self._init_conn(add_user, add_db_permissions)
-
         self._is_connected = True
+        return True
 
     async def disconnect(self):
         self.writer.close()
@@ -50,7 +50,7 @@ class Client(object):
                     logging.debug(f'client {self.client_id} got action from server')
                     await self.db_actions.handle_protobuf(action)
         except (asyncio.CancelledError, Exception) as e:
-            logging.exception(e)
+            pass
 
     async def _init_conn(self, add_user=False, add_db_permissions=False):
         if add_user:
@@ -120,5 +120,4 @@ class Client(object):
         data = await self.reader.read()
         message.ParseFromString(data)
         if message.result != Results.SUCCESS:
-            logging.error('Got exception in init_conn')
             raise RESULTS_TO_EXCEPTIONS[message.result]

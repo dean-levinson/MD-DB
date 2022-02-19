@@ -14,20 +14,6 @@ from traitlets.config.loader import Config
 logging.basicConfig(level=logging.ERROR, format="[%(levelname)s]: %(message)s")
 
 
-async def run(c: Client, add_user: bool, add_permissions: bool):
-    try:
-        await c.connect(add_user=add_user, add_db_permissions=add_permissions)
-        await c.sync_with_remote()
-    except futures.CancelledError as e:
-        logging.error(f"Got exception.\nClosing client connection!")
-        logging.exception(e)
-        try:
-            await c.disconnect()
-        except:
-            pass
-
-
-
 def db_backend(loop: asyncio.AbstractEventLoop):
     asyncio.set_event_loop(loop)
     loop.run_forever()
@@ -67,19 +53,20 @@ def main(client_id, host, port, dbname, dbdir, add_user, add_permissions):
     thread = threading.Thread(target=db_backend, args=(loop,))
     thread.start()
 
-    handler = asyncio.run_coroutine_threadsafe(run(client, add_user, add_permissions), loop)
-
-    # In case connect didn't work for 0.125 seconds, kill event_loop
+    # handler = asyncio.run_coroutine_threadsafe(run(client, add_user, add_permissions), loop)
+    
+    connect_handler = asyncio.run_coroutine_threadsafe(client.connect(add_user, add_permissions), loop)
+    
     try:
-        logging.error(handler.exception(3))
-        kill_event_loop(thread, loop)
-        return
-    except futures.TimeoutError:
-        pass
+        # Wait up to 5 seconds to the server to connect
+        connection_result = connect_handler.result(5)
     except Exception as e:
-        logging.exception(e)
         kill_event_loop(thread, loop)
+        error = termcolor.colored(f"{e.__class__.__name__}", "red", attrs=["bold"])
+        logging.error(f"Error while trying to connect to server: {error}")
         return
+
+    client_handler = asyncio.run_coroutine_threadsafe(client.sync_with_remote(), loop)
 
     banner = termcolor.colored("\nWelcome to MD-DB!", "green", attrs=["bold"])
     banner2 = termcolor.colored("Use client.* functions\n", "white", attrs=["bold"])
@@ -95,4 +82,4 @@ def main(client_id, host, port, dbname, dbdir, add_user, add_permissions):
         config=config
     )
 
-    kill_event_loop(loop)
+    kill_event_loop(thread, loop)
