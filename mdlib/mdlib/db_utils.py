@@ -14,6 +14,7 @@ RESULTS_TO_EXCEPTIONS = {
     Results.USER_ALREADY_EXISTS: ClientIDAlreadyExists,
     Results.USER_DOES_NOT_EXISTS: ClientIDDoesNotExist,
     Results.USER_NOT_ALLOWED: ClientNotAllowed,
+    Results.INCORRECT_PASSWORD: IncorrectPassword,
 }
         
 EXCEPTIONS_TO_RESULT = {v: k for k, v in RESULTS_TO_EXCEPTIONS.items()}

@@ -5,7 +5,7 @@ import logging
 import functools
 from collections import namedtuple
 from mdlib import md_pb2
-from mdlib.md_pb2 import InitConnActions, Results, DBResult
+from mdlib.md_pb2 import InitConn, InitConnActions, Results, DBResult
 from mdlib.exceptions import InvalidAction
 from mdlib.md_pb2 import DBMessage, MessageTypes, Results
 from mdlib.socket_utils import LengthReader, LengthWriter
@@ -62,20 +62,50 @@ class Session(object):
         self.checked_state = False
 
         self.handlers = {
+            InitConnActions.LOGIN: Handler(self.handle_login, True),
             InitConnActions.ADD_USER: Handler(self.handle_add_user, True),
             InitConnActions.ADD_PERMISSIONS: Handler(self.handle_add_permissions, True),
-            InitConnActions.DB_INFO: Handler(self.handle_db_info, True),
             InitConnActions.CHECK_DB_HASH: Handler(self.handle_check_db_hash, False),
             InitConnActions.GET_DB_STATE: Handler(self.handle_get_db_state, True),
             InitConnActions.GET_DB: Handler(self.handle_get_db, True),
             InitConnActions.INIT_DONE: Handler(self.handle_init_done, False)
         }
 
-    @validate_args_kwargs(['client_id'])
+    @validate_args_kwargs(['client_id', 'password', 'db_name'])
+    async def handle_login(self, *args, **kwargs):
+        client_id = kwargs['client_id']
+        db_name = kwargs['db_name']
+        password = kwargs['password']
+        logging.info(f"Got login request from {client_id} to {db_name}")
+        
+        self.client_id = client_id
+        self.db_name = db_name
+        
+        message = md_pb2.DBResult()
+        try:
+            if self.server.users.is_correct_password(client_id, password):
+                if self.server.users.check_client_permissions(self.client_id, self.db_name):
+                    logging.info(f"Client {self.client_id} connected successfully to db {self.db_name}")
+                    self.is_user_verified = True
+                    self.server_sessions[self.client_id] = self
+                    self.server_db_sessions.setdefault(self.db_name, []).append(self)
+                    message.result = Results.SUCCESS
+                else:
+                    logging.info(f"Client {self.client_id} not allowed to access {self.db_name}")
+                    message.result = Results.USER_NOT_ALLOWED
+            else:
+                message.result = Results.INCORRECT_PASSWORD
+                logging.info(f"Client {self.client_id} passed incorrect password!")
+        except ClientIDDoesNotExist:
+            message.result = Results.USER_DOES_NOT_EXISTS
+
+        await self.send_protobuf(message)        
+
+    @validate_args_kwargs(['client_id', 'password'])
     async def handle_add_user(self, *args, **kwargs):
         message = md_pb2.DBResult()
         try:
-            self.server.users.add_user(kwargs['client_id'])
+            self.server.users.add_user(kwargs['client_id'], kwargs['password'])
             message.result = Results.SUCCESS
         except Exception as e:
             message.result = EXCEPTIONS_TO_RESULT[type(e)]
@@ -92,28 +122,6 @@ class Session(object):
         except Exception as e:
             message.result = EXCEPTIONS_TO_RESULT[type(e)]
         
-        await self.send_protobuf(message)
-
-    @validate_args_kwargs(['client_id', 'db_name'])
-    async def handle_db_info(self, *args, **kwargs):
-        message = md_pb2.DBResult()
-        self.client_id = kwargs['client_id']
-        self.db_name = kwargs['db_name']
-        
-        try:
-            is_user_allowed = self.server.users.check_client_permissions(self.client_id, self.db_name)
-            if not is_user_allowed:
-                logging.info(f"Client {self.client_id} not allowed to access {self.db_name}")
-                message.result = Results.USER_NOT_ALLOWED
-            else:
-                logging.info(f"Client {self.client_id} connected to db {self.db_name}")
-                self.is_user_verified = True
-                self.server_sessions[self.client_id] = self
-                self.server_db_sessions.setdefault(self.db_name, []).append(self)
-                message.result = Results.SUCCESS
-        except ClientIDDoesNotExist:
-            message.result = Results.USER_DOES_NOT_EXISTS
-
         await self.send_protobuf(message)
 
     @validate_args_kwargs(['db_hash'])

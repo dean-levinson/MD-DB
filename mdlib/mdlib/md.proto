@@ -19,6 +19,7 @@ enum Results {
     USER_ALREADY_EXISTS = 3;
     USER_DOES_NOT_EXISTS = 4;
     USER_NOT_ALLOWED = 5;
+    INCORRECT_PASSWORD = 6;
 }
 
 message DBResult {
@@ -55,6 +56,7 @@ enum InitConnActions {
     GET_DB_STATE = 4;
     GET_DB = 5;
     INIT_DONE = 6;
+    LOGIN = 7;
 }
 
 message InitConn {
@@ -64,5 +66,6 @@ message InitConn {
     optional string db_hash = 4;
     optional bytes db_file = 5;
     optional bool state = 6;
+    optional string password = 7;
 }
 

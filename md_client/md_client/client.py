@@ -12,12 +12,13 @@ from typing import Optional
 
 
 class Client(object):
-    def __init__(self, addr, db_name, client_id, channel: asyncio.Queue = None, db_directory=None):
+    def __init__(self, addr, db_name, client_id, password, channel: asyncio.Queue = None, db_directory=None):
         self.reader: Optional[LengthReader] = None
         self.writer: Optional[LengthWriter] = None
         self.hostname, self.port = addr
         self.db_name = db_name
         self.client_id = client_id
+        self.password = password
         self.db_directory = db_directory or '.'
         self.channel: asyncio.Queue = channel
         self.db_actions = MDActions(db_directory, db_name, self.channel, is_client=True)
@@ -52,22 +53,29 @@ class Client(object):
         except (asyncio.CancelledError, Exception) as e:
             pass
 
+    async def login(self):
+        message = md_pb2.InitConn(action_type=InitConnActions.LOGIN, 
+                                  client_id=self.client_id, 
+                                  db_name=self.db_name,
+                                  password=self.password)
+
+        await self.send_protobuf(message)
+        await self.__get_init_conn_result()
+
     async def _init_conn(self, add_user=False, add_db_permissions=False):
         if add_user:
             await self._add_user()
         if add_db_permissions:
             await self._add_db_permissions()
 
-        await self._send_db_info()
+        await self.login()
         await self.pull_db()
 
-    async def _send_db_info(self):
-        message = md_pb2.InitConn(action_type=InitConnActions.DB_INFO, client_id=self.client_id, db_name=self.db_name)
-        await self.send_protobuf(message)
-        await self.__get_init_conn_result()
-
     async def _add_user(self):
-        message = md_pb2.InitConn(action_type=InitConnActions.ADD_USER, client_id=self.client_id)
+        message = md_pb2.InitConn(action_type=InitConnActions.ADD_USER, 
+                                  client_id=self.client_id,
+                                  password=self.password)
+
         await self.send_protobuf(message)
         await self.__get_init_conn_result()
 
