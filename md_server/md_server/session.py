@@ -211,7 +211,10 @@ class Session(object):
 
     @property
     def db_path(self):
-        return os.path.join(self.directory, self.db_name)
+        if self.directory and self.db_name:
+            return os.path.join(self.directory, self.db_name)
+        else:
+            return self.db_name
 
     def __str__(self):
         return f"Session(sever={self.server}, client_id={self.client_id}, db_path={self.db_path})"
