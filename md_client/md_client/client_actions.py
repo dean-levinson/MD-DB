@@ -1,9 +1,9 @@
-import ast
 import asyncio
 from mdlib.md_pb2 import Actions, DBResult, Results
+from mdlib.db_utils import serialize_db_value
 
 from md_client.client import Client
-from mdlib.db_utils import RESULTS_TO_EXCEPTIONS
+from mdlib.db_utils import RESULTS_TO_EXCEPTIONS, get_db_value
 
 
 class ClientActions(object):
@@ -16,7 +16,8 @@ class ClientActions(object):
         self.__client = client
         self.__channel: asyncio.Queue = channel
 
-    def __handle_result(self, db_result):
+    def __handle_result(self, message):
+        db_result = message.db_result
         if db_result.result != Results.SUCCESS:
             raise RESULTS_TO_EXCEPTIONS[db_result.result]
 
@@ -40,7 +41,7 @@ class ClientActions(object):
         handler = asyncio.run_coroutine_threadsafe(self.__get_all_keys_inner(), self.__loop)
         db_result = asyncio.run_coroutine_threadsafe(self.__channel.get(), self.__loop).result(5)
         self.__handle_result(db_result)
-        return ast.literal_eval(db_result.result_value)
+        return get_db_value(db_result)
 
     def set_value(self, key, value):
         handler = asyncio.run_coroutine_threadsafe(self.__set_value_inner(key, value), self.__loop)
@@ -51,7 +52,7 @@ class ClientActions(object):
         handler = asyncio.run_coroutine_threadsafe(self.__get_key_value_inner(key), self.__loop)
         db_result = asyncio.run_coroutine_threadsafe(self.__channel.get(), self.__loop).result(5)
         self.__handle_result(db_result)
-        return db_result.result_value
+        return get_db_value(db_result)
 
     def delete_key(self, key):
         handler = asyncio.run_coroutine_threadsafe(self.__delete_key(key), self.__loop)

@@ -23,6 +23,7 @@ class Server(object):
         try:
             await session.handle_session()
         except Exception as e:
+            logging.exception(e)
             writer.close()
             await writer.wait_closed()
         finally:
