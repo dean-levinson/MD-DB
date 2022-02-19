@@ -29,20 +29,6 @@ def validate_args_kwargs(arguments):
 
     return decorator
 
-def send_init_conn_result():
-    async def decorator(func):
-        @functools.wraps(func)
-        async def wrapper(self, *args, **kwargs):
-            message = md_pb2.DBResult()
-            try:
-                func(self, *args, **kwargs)
-                message.result = Results.SUCCESS
-            except Exception as e:
-                message.result = EXCEPTIONS_TO_RESULT[type(e)]
-            await self.send_protobuf(message)
-        return wrapper
-
-    return decorator
 
 class Session(object):
     def __init__(self, server, reader: asyncio.StreamReader, writer: asyncio.StreamWriter, directory: str,
@@ -77,10 +63,10 @@ class Session(object):
         db_name = kwargs['db_name']
         password = kwargs['password']
         logging.info(f"Got login request from {client_id} to {db_name}")
-        
+
         self.client_id = client_id
         self.db_name = db_name
-        
+
         message = md_pb2.DBResult()
         try:
             if self.server.users.is_correct_password(client_id, password):
@@ -99,7 +85,7 @@ class Session(object):
         except ClientIDDoesNotExist:
             message.result = Results.USER_DOES_NOT_EXISTS
 
-        await self.send_protobuf(message)        
+        await self.send_protobuf(message)
 
     @validate_args_kwargs(['client_id', 'password'])
     async def handle_add_user(self, *args, **kwargs):
@@ -109,9 +95,8 @@ class Session(object):
             message.result = Results.SUCCESS
         except Exception as e:
             message.result = EXCEPTIONS_TO_RESULT[type(e)]
-        
-        await self.send_protobuf(message)
 
+        await self.send_protobuf(message)
 
     @validate_args_kwargs(['client_id', 'db_name'])
     async def handle_add_permissions(self, *args, **kwargs):
@@ -121,7 +106,7 @@ class Session(object):
             message.result = Results.SUCCESS
         except Exception as e:
             message.result = EXCEPTIONS_TO_RESULT[type(e)]
-        
+
         await self.send_protobuf(message)
 
     @validate_args_kwargs(['db_hash'])
@@ -181,7 +166,8 @@ class Session(object):
             try:
                 result = await self.db_actions.handle_protobuf(request)
                 logging.error(f"Result is: {result}")
-                message.db_result.result_value = str(result)
+                if result is not None:
+                    message.db_value.value_type, message.db_value.value = result
             except Exception as e:
                 message.db_result.result = EXCEPTIONS_TO_RESULT[type(e)]
 

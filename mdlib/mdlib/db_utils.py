@@ -1,10 +1,11 @@
 import os
+import ast
 import asyncio
 import json
 import hashlib
 import logging
 import functools
-from mdlib.md_pb2 import Actions, DBMessage, MessageTypes, Results
+from mdlib.md_pb2 import Actions, DBMessage, MessageTypes, Results, ValueType
 from mdlib.exceptions import *
 
 RESULTS_TO_EXCEPTIONS = {
@@ -16,8 +17,9 @@ RESULTS_TO_EXCEPTIONS = {
     Results.USER_NOT_ALLOWED: ClientNotAllowed,
     Results.INCORRECT_PASSWORD: IncorrectPassword,
 }
-        
+
 EXCEPTIONS_TO_RESULT = {v: k for k, v in RESULTS_TO_EXCEPTIONS.items()}
+
 
 class MDActions(object):
     """
@@ -55,13 +57,13 @@ class MDActions(object):
             action = message.db_action
             match action.action_type:
                 case Actions.ADD_ITEM:
-                    self.add_item(key=action.key, value=action.value)
+                    self.add_item(key=action.key, value=get_db_value(message))
                 case Actions.SET_VALUE:
-                    self.set_value(key=action.key, value=action.value)
+                    self.set_value(key=action.key, value=get_db_value(message))
                 case Actions.GET_KEY_VALUE:
-                    return self.get_key_value(key=action.key)
+                    return serialize_db_value(self.get_key_value(key=action.key))
                 case Actions.GET_ALL_KEYS:
-                    return self.get_all_keys()
+                    return serialize_db_value(self.get_all_keys())
                 case Actions.DELETE_KEY:
                     self.delete_key(key=action.key)
                 case Actions.DELETE_DB:
@@ -70,8 +72,7 @@ class MDActions(object):
         elif message.message_type == MessageTypes.DB_RESULT:
             logging.info(f"Result of last operation: {message.db_result.result}")
             if self.channel is not None:
-                await self.channel.put(message.db_result)
-            
+                await self.channel.put(message)
 
     def _get_client_request(self, action_type, key=None, value=None):
         message = DBMessage()
@@ -83,7 +84,9 @@ class MDActions(object):
         if key is not None:
             message.db_action.key = key
         if value is not None:
-            message.db_action.value = value
+            value_type, value_bytes = serialize_db_value(value)
+            message.db_value.value_type = value_type
+            message.db_value.value = value_bytes
         return message.SerializeToString()
 
     # todo: Consider delete this
@@ -119,7 +122,9 @@ class MDActions(object):
                     logging.debug(f"Updated db! {self.db_data}")
 
                 return ret_val
+
             return wrapper
+
         return deco
 
     @db_transaction(write_to_db=True, action_type=Actions.ADD_ITEM)
@@ -147,7 +152,6 @@ class MDActions(object):
         # Returns an array of all keys in db
         return list(self.db_data.keys())
 
-
     @db_transaction(write_to_db=True, action_type=Actions.DELETE_KEY)
     def delete_key(self, key):
         key = str(key)
@@ -164,8 +168,31 @@ class MDActions(object):
             # TODO: close client's connection to sever somehow
             pass
 
+
 def get_db_md5(db_name):
     logging.info(f"dbname: {db_name}")
     with open(db_name, 'rb') as db:
         data = db.read()
     return hashlib.md5(data).hexdigest()
+
+
+def get_db_value(protobuf_obj):
+    if not isinstance(protobuf_obj, DBMessage):
+        message = DBMessage()
+        message.ParseFromString(protobuf_obj)
+    else:
+        message = protobuf_obj
+
+    match message.db_value.value_type:
+        case (ValueType.INT | ValueType.PYTHON_OBJ):
+            return ast.literal_eval(message.db_value.value.decode('utf-16'))
+        case ValueType.STR:
+            return message.db_value.value.decode('utf-16')
+
+
+def serialize_db_value(value):
+    if isinstance(value, int):
+        return ValueType.INT, str(value).encode('utf-16')
+    elif isinstance(value, str):
+        return ValueType.STR, value.encode('utf-16')
+    return ValueType.PYTHON_OBJ, str(value).encode('utf-16')
