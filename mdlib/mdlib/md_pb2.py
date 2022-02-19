@@ -15,7 +15,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x08md.proto\x12\tprotoblog\"Z\n\x08\x44\x42Result\x12\"\n\x06result\x18\x01 \x01(\x0e\x32\x12.protoblog.Results\x12\x19\n\x0cresult_value\x18\x02 \x01(\tH\x00\x88\x01\x01\x42\x0f\n\r_result_value\"\xb0\x01\n\tDBMessage\x12-\n\x0cmessage_type\x18\x01 \x01(\x0e\x32\x17.protoblog.MessageTypes\x12+\n\tdb_action\x18\x02 \x01(\x0b\x32\x13.protoblog.DBActionH\x00\x88\x01\x01\x12+\n\tdb_result\x18\x03 \x01(\x0b\x32\x13.protoblog.DBResultH\x01\x88\x01\x01\x42\x0c\n\n_db_actionB\x0c\n\n_db_result\"k\n\x08\x44\x42\x41\x63tion\x12\'\n\x0b\x61\x63tion_type\x18\x01 \x01(\x0e\x32\x12.protoblog.Actions\x12\x10\n\x03key\x18\x02 \x01(\tH\x00\x88\x01\x01\x12\x12\n\x05value\x18\x03 \x01(\tH\x01\x88\x01\x01\x42\x06\n\x04_keyB\x08\n\x06_value\"\x89\x02\n\x08InitConn\x12/\n\x0b\x61\x63tion_type\x18\x01 \x01(\x0e\x32\x1a.protoblog.InitConnActions\x12\x14\n\x07\x64\x62_name\x18\x02 \x01(\tH\x00\x88\x01\x01\x12\x16\n\tclient_id\x18\x03 \x01(\x05H\x01\x88\x01\x01\x12\x14\n\x07\x64\x62_hash\x18\x04 \x01(\tH\x02\x88\x01\x01\x12\x14\n\x07\x64\x62_file\x18\x05 \x01(\x0cH\x03\x88\x01\x01\x12\x12\n\x05state\x18\x06 \x01(\x08H\x04\x88\x01\x01\x12\x15\n\x08password\x18\x07 \x01(\tH\x05\x88\x01\x01\x42\n\n\x08_db_nameB\x0c\n\n_client_idB\n\n\x08_db_hashB\n\n\x08_db_fileB\x08\n\x06_stateB\x0b\n\t_password*,\n\x0cMessageTypes\x12\r\n\tDB_ACTION\x10\x00\x12\r\n\tDB_RESULT\x10\x01*\xa8\x01\n\x07Results\x12\x0b\n\x07SUCCESS\x10\x00\x12\x17\n\x13KEY_DOES_NOT_EXISTS\x10\x01\x12\x16\n\x12KEY_ALREADY_EXISTS\x10\x02\x12\x17\n\x13USER_ALREADY_EXISTS\x10\x03\x12\x18\n\x14USER_DOES_NOT_EXISTS\x10\x04\x12\x14\n\x10USER_NOT_ALLOWED\x10\x05\x12\x16\n\x12INCORRECT_PASSWORD\x10\x06*j\n\x07\x41\x63tions\x12\x0c\n\x08\x41\x44\x44_ITEM\x10\x00\x12\r\n\tSET_VALUE\x10\x01\x12\x11\n\rGET_KEY_VALUE\x10\x02\x12\x10\n\x0cGET_ALL_KEYS\x10\x03\x12\x0e\n\nDELETE_KEY\x10\x04\x12\r\n\tDELETE_DB\x10\x05*\x8c\x01\n\x0fInitConnActions\x12\x0c\n\x08\x41\x44\x44_USER\x10\x00\x12\x13\n\x0f\x41\x44\x44_PERMISSIONS\x10\x01\x12\x0b\n\x07\x44\x42_INFO\x10\x02\x12\x11\n\rCHECK_DB_HASH\x10\x03\x12\x10\n\x0cGET_DB_STATE\x10\x04\x12\n\n\x06GET_DB\x10\x05\x12\r\n\tINIT_DONE\x10\x06\x12\t\n\x05LOGIN\x10\x07\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x14mdlib/mdlib/md.proto\x12\tprotoblog\"\xe8\x01\n\tDBMessage\x12-\n\x0cmessage_type\x18\x01 \x01(\x0e\x32\x17.protoblog.MessageTypes\x12+\n\tdb_action\x18\x02 \x01(\x0b\x32\x13.protoblog.DBActionH\x00\x88\x01\x01\x12+\n\tdb_result\x18\x03 \x01(\x0b\x32\x13.protoblog.DBResultH\x01\x88\x01\x01\x12)\n\x08\x64\x62_value\x18\x04 \x01(\x0b\x32\x12.protoblog.DBValueH\x02\x88\x01\x01\x42\x0c\n\n_db_actionB\x0c\n\n_db_resultB\x0b\n\t_db_value\".\n\x08\x44\x42Result\x12\"\n\x06result\x18\x01 \x01(\x0e\x32\x12.protoblog.Results\"M\n\x08\x44\x42\x41\x63tion\x12\'\n\x0b\x61\x63tion_type\x18\x01 \x01(\x0e\x32\x12.protoblog.Actions\x12\x10\n\x03key\x18\x02 \x01(\tH\x00\x88\x01\x01\x42\x06\n\x04_key\"B\n\x07\x44\x42Value\x12(\n\nvalue_type\x18\x01 \x01(\x0e\x32\x14.protoblog.ValueType\x12\r\n\x05value\x18\x02 \x01(\x0c\"\x89\x02\n\x08InitConn\x12/\n\x0b\x61\x63tion_type\x18\x01 \x01(\x0e\x32\x1a.protoblog.InitConnActions\x12\x14\n\x07\x64\x62_name\x18\x02 \x01(\tH\x00\x88\x01\x01\x12\x16\n\tclient_id\x18\x03 \x01(\x05H\x01\x88\x01\x01\x12\x14\n\x07\x64\x62_hash\x18\x04 \x01(\tH\x02\x88\x01\x01\x12\x14\n\x07\x64\x62_file\x18\x05 \x01(\x0cH\x03\x88\x01\x01\x12\x12\n\x05state\x18\x06 \x01(\x08H\x04\x88\x01\x01\x12\x15\n\x08password\x18\x07 \x01(\tH\x05\x88\x01\x01\x42\n\n\x08_db_nameB\x0c\n\n_client_idB\n\n\x08_db_hashB\n\n\x08_db_fileB\x08\n\x06_stateB\x0b\n\t_password*,\n\x0cMessageTypes\x12\r\n\tDB_ACTION\x10\x00\x12\r\n\tDB_RESULT\x10\x01*\xa8\x01\n\x07Results\x12\x0b\n\x07SUCCESS\x10\x00\x12\x17\n\x13KEY_DOES_NOT_EXISTS\x10\x01\x12\x16\n\x12KEY_ALREADY_EXISTS\x10\x02\x12\x17\n\x13USER_ALREADY_EXISTS\x10\x03\x12\x18\n\x14USER_DOES_NOT_EXISTS\x10\x04\x12\x14\n\x10USER_NOT_ALLOWED\x10\x05\x12\x16\n\x12INCORRECT_PASSWORD\x10\x06*j\n\x07\x41\x63tions\x12\x0c\n\x08\x41\x44\x44_ITEM\x10\x00\x12\r\n\tSET_VALUE\x10\x01\x12\x11\n\rGET_KEY_VALUE\x10\x02\x12\x10\n\x0cGET_ALL_KEYS\x10\x03\x12\x0e\n\nDELETE_KEY\x10\x04\x12\r\n\tDELETE_DB\x10\x05*-\n\tValueType\x12\x07\n\x03INT\x10\x00\x12\x07\n\x03STR\x10\x01\x12\x0e\n\nPYTHON_OBJ\x10\x02*\x8c\x01\n\x0fInitConnActions\x12\x0c\n\x08\x41\x44\x44_USER\x10\x00\x12\x13\n\x0f\x41\x44\x44_PERMISSIONS\x10\x01\x12\x0b\n\x07\x44\x42_INFO\x10\x02\x12\x11\n\rCHECK_DB_HASH\x10\x03\x12\x10\n\x0cGET_DB_STATE\x10\x04\x12\n\n\x06GET_DB\x10\x05\x12\r\n\tINIT_DONE\x10\x06\x12\t\n\x05LOGIN\x10\x07\x62\x06proto3')
 
 _MESSAGETYPES = DESCRIPTOR.enum_types_by_name['MessageTypes']
 MessageTypes = enum_type_wrapper.EnumTypeWrapper(_MESSAGETYPES)
@@ -23,6 +23,8 @@ _RESULTS = DESCRIPTOR.enum_types_by_name['Results']
 Results = enum_type_wrapper.EnumTypeWrapper(_RESULTS)
 _ACTIONS = DESCRIPTOR.enum_types_by_name['Actions']
 Actions = enum_type_wrapper.EnumTypeWrapper(_ACTIONS)
+_VALUETYPE = DESCRIPTOR.enum_types_by_name['ValueType']
+ValueType = enum_type_wrapper.EnumTypeWrapper(_VALUETYPE)
 _INITCONNACTIONS = DESCRIPTOR.enum_types_by_name['InitConnActions']
 InitConnActions = enum_type_wrapper.EnumTypeWrapper(_INITCONNACTIONS)
 DB_ACTION = 0
@@ -40,6 +42,9 @@ GET_KEY_VALUE = 2
 GET_ALL_KEYS = 3
 DELETE_KEY = 4
 DELETE_DB = 5
+INT = 0
+STR = 1
+PYTHON_OBJ = 2
 ADD_USER = 0
 ADD_PERMISSIONS = 1
 DB_INFO = 2
@@ -50,34 +55,42 @@ INIT_DONE = 6
 LOGIN = 7
 
 
-_DBRESULT = DESCRIPTOR.message_types_by_name['DBResult']
 _DBMESSAGE = DESCRIPTOR.message_types_by_name['DBMessage']
+_DBRESULT = DESCRIPTOR.message_types_by_name['DBResult']
 _DBACTION = DESCRIPTOR.message_types_by_name['DBAction']
+_DBVALUE = DESCRIPTOR.message_types_by_name['DBValue']
 _INITCONN = DESCRIPTOR.message_types_by_name['InitConn']
-DBResult = _reflection.GeneratedProtocolMessageType('DBResult', (_message.Message,), {
-  'DESCRIPTOR' : _DBRESULT,
-  '__module__' : 'md_pb2'
-  # @@protoc_insertion_point(class_scope:protoblog.DBResult)
-  })
-_sym_db.RegisterMessage(DBResult)
-
 DBMessage = _reflection.GeneratedProtocolMessageType('DBMessage', (_message.Message,), {
   'DESCRIPTOR' : _DBMESSAGE,
-  '__module__' : 'md_pb2'
+  '__module__' : 'mdlib.mdlib.md_pb2'
   # @@protoc_insertion_point(class_scope:protoblog.DBMessage)
   })
 _sym_db.RegisterMessage(DBMessage)
 
+DBResult = _reflection.GeneratedProtocolMessageType('DBResult', (_message.Message,), {
+  'DESCRIPTOR' : _DBRESULT,
+  '__module__' : 'mdlib.mdlib.md_pb2'
+  # @@protoc_insertion_point(class_scope:protoblog.DBResult)
+  })
+_sym_db.RegisterMessage(DBResult)
+
 DBAction = _reflection.GeneratedProtocolMessageType('DBAction', (_message.Message,), {
   'DESCRIPTOR' : _DBACTION,
-  '__module__' : 'md_pb2'
+  '__module__' : 'mdlib.mdlib.md_pb2'
   # @@protoc_insertion_point(class_scope:protoblog.DBAction)
   })
 _sym_db.RegisterMessage(DBAction)
 
+DBValue = _reflection.GeneratedProtocolMessageType('DBValue', (_message.Message,), {
+  'DESCRIPTOR' : _DBVALUE,
+  '__module__' : 'mdlib.mdlib.md_pb2'
+  # @@protoc_insertion_point(class_scope:protoblog.DBValue)
+  })
+_sym_db.RegisterMessage(DBValue)
+
 InitConn = _reflection.GeneratedProtocolMessageType('InitConn', (_message.Message,), {
   'DESCRIPTOR' : _INITCONN,
-  '__module__' : 'md_pb2'
+  '__module__' : 'mdlib.mdlib.md_pb2'
   # @@protoc_insertion_point(class_scope:protoblog.InitConn)
   })
 _sym_db.RegisterMessage(InitConn)
@@ -85,20 +98,24 @@ _sym_db.RegisterMessage(InitConn)
 if _descriptor._USE_C_DESCRIPTORS == False:
 
   DESCRIPTOR._options = None
-  _MESSAGETYPES._serialized_start=671
-  _MESSAGETYPES._serialized_end=715
-  _RESULTS._serialized_start=718
-  _RESULTS._serialized_end=886
-  _ACTIONS._serialized_start=888
-  _ACTIONS._serialized_end=994
-  _INITCONNACTIONS._serialized_start=997
-  _INITCONNACTIONS._serialized_end=1137
-  _DBRESULT._serialized_start=23
-  _DBRESULT._serialized_end=113
-  _DBMESSAGE._serialized_start=116
-  _DBMESSAGE._serialized_end=292
-  _DBACTION._serialized_start=294
-  _DBACTION._serialized_end=401
-  _INITCONN._serialized_start=404
-  _INITCONN._serialized_end=669
+  _MESSAGETYPES._serialized_start=733
+  _MESSAGETYPES._serialized_end=777
+  _RESULTS._serialized_start=780
+  _RESULTS._serialized_end=948
+  _ACTIONS._serialized_start=950
+  _ACTIONS._serialized_end=1056
+  _VALUETYPE._serialized_start=1058
+  _VALUETYPE._serialized_end=1103
+  _INITCONNACTIONS._serialized_start=1106
+  _INITCONNACTIONS._serialized_end=1246
+  _DBMESSAGE._serialized_start=36
+  _DBMESSAGE._serialized_end=268
+  _DBRESULT._serialized_start=270
+  _DBRESULT._serialized_end=316
+  _DBACTION._serialized_start=318
+  _DBACTION._serialized_end=395
+  _DBVALUE._serialized_start=397
+  _DBVALUE._serialized_end=463
+  _INITCONN._serialized_start=466
+  _INITCONN._serialized_end=731
 # @@protoc_insertion_point(module_scope)

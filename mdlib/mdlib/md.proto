@@ -12,6 +12,13 @@ enum MessageTypes {
     DB_RESULT = 1;
 }
 
+message DBMessage {
+    MessageTypes message_type = 1;
+    optional DBAction db_action = 2;
+    optional DBResult db_result = 3;
+    optional DBValue db_value = 4;
+}
+
 enum Results {
     SUCCESS = 0;
     KEY_DOES_NOT_EXISTS = 1;
@@ -24,13 +31,6 @@ enum Results {
 
 message DBResult {
     Results result = 1;
-    optional string result_value = 2;
-}
-
-message DBMessage {
-    MessageTypes message_type = 1;
-    optional DBAction db_action = 2;
-    optional DBResult db_result = 3;
 }
 
 enum Actions {
@@ -45,7 +45,17 @@ enum Actions {
 message DBAction {
     Actions action_type = 1;
     optional string key = 2;
-    optional string value = 3;
+}
+
+enum ValueType {
+    INT = 0;
+    STR = 1;
+    PYTHON_OBJ = 2;
+}
+
+message DBValue {
+    ValueType value_type = 1;
+    bytes value = 2;
 }
 
 enum InitConnActions {
