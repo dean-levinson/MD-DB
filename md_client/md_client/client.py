@@ -121,5 +121,4 @@ class Client(object):
         message.ParseFromString(data)
         if message.result != Results.SUCCESS:
             logging.error('Got exception in init_conn')
-            import ipdb; ipdb.set_trace()
             raise RESULTS_TO_EXCEPTIONS[message.result]

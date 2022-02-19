@@ -51,8 +51,8 @@ def kill_event_loop(thread, loop):
 @click.option("--port", "-p", type=int, required=True)
 @click.option("--dbname", "-d", type=str, required=True)
 @click.option("--dbdir", type=str, required=False, default=".")
-@click.option("--add-user", type=bool, required=False, default=False)
-@click.option("--add-permissions", type=bool, required=False, default=False)
+@click.option("--add-user", type=bool, required=False, is_flag=True, default=False)
+@click.option("--add-permissions", type=bool, required=False, is_flag=True, default=False)
 def main(client_id, host, port, dbname, dbdir, add_user, add_permissions):
     # Fixes Windows errors while running from cmd
     if sys.version_info[0] == 3 and sys.version_info[1] >= 8 and sys.platform.startswith('win'):

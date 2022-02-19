@@ -24,7 +24,7 @@ async def run(host, port, dbdir):
 
 
 @click.command()
-@click.option("--host", "-h", type=str, required=True)
+@click.option("--host", "-h", type=str, required=False, default=None)
 @click.option("--port", "-p", type=int, required=True)
 @click.option("--dbdir", type=str, required=False, default=".")
 def main(host, port, dbdir):
