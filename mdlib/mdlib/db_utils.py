@@ -89,13 +89,11 @@ class MDActions(object):
             message.db_value.value = value_bytes
         return message.SerializeToString()
 
-    # todo: Consider delete this
     def __enter__(self):
         with open(self.db_path, 'r') as db_descriptor:
             self._tmp_db_dict = json.load(db_descriptor)
         return self._tmp_db_dict
 
-    # todo: Consider delete this
     def __exit__(self, exc_type, exc_value, traceback):
         if traceback:
             logging.exception(traceback)
@@ -165,7 +163,7 @@ class MDActions(object):
         logging.info(f'deleting db {self.db_path}!')
         os.remove(self.db_path)
         if self.is_client:
-            # TODO: close client's connection to sever somehow
+            # TODO: close client's connection to sever
             pass
 
 

@@ -13,8 +13,6 @@ from mdlib.db_utils import get_db_md5, MDActions, EXCEPTIONS_TO_RESULT
 from mdlib.exceptions import *
 
 Handler = namedtuple("Handler", ["handler", "is_async"])
-ExceptionTuple = namedtuple("ExceptionTuple", ["should_raise", "exception_type"])
-
 
 def validate_args_kwargs(arguments):
     def decorator(func):
@@ -53,7 +51,6 @@ class Session(object):
             InitConnActions.CHECK_DB_HASH: Handler(self.handle_check_db_hash, False),
             InitConnActions.GET_DB_STATE: Handler(self.handle_get_db_state, True),
             InitConnActions.GET_DB: Handler(self.handle_get_db, True),
-            InitConnActions.INIT_DONE: Handler(self.handle_init_done, False)
         }
 
     @validate_args_kwargs(['client_id', 'password', 'db_name'])
@@ -97,17 +94,6 @@ class Session(object):
 
         await self.send_protobuf(message)
 
-    @validate_args_kwargs(['client_id', 'db_name'])
-    async def handle_add_permissions(self, *args, **kwargs):
-        message = md_pb2.DBResult()
-        try:
-            self.server.users.add_db_permission(kwargs['client_id'], kwargs['db_name'])
-            message.result = Results.SUCCESS
-        except Exception as e:
-            message.result = EXCEPTIONS_TO_RESULT[type(e)]
-
-        await self.send_protobuf(message)
-
     @validate_args_kwargs(['db_hash'])
     def handle_check_db_hash(self, *args, **kwargs):
         self.is_check_hash = self._check_db_md5(kwargs['db_hash'])
@@ -124,9 +110,6 @@ class Session(object):
 
         message = md_pb2.InitConn(action_type=InitConnActions.GET_DB, db_file=db_file)
         await self.send_protobuf(message)
-
-    def handle_init_done(self, *args, **kwargs):
-        logging.error("Client does not determine when init is done")
 
     async def _init_conn(self):
         while (not self.is_check_hash or not self.checked_state) or (not self.is_user_verified):

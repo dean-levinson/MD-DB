@@ -60,13 +60,12 @@ message DBValue {
 
 enum InitConnActions {
     ADD_USER = 0;
-    ADD_PERMISSIONS = 1;
-    DB_INFO = 2;
-    CHECK_DB_HASH = 3;
-    GET_DB_STATE = 4;
-    GET_DB = 5;
-    INIT_DONE = 6;
-    LOGIN = 7;
+    DB_INFO = 1;
+    CHECK_DB_HASH = 2;
+    GET_DB_STATE = 3;
+    GET_DB = 4;
+    INIT_DONE = 5;
+    LOGIN = 6;
 }
 
 message InitConn {

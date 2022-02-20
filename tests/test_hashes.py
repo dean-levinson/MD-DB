@@ -8,7 +8,7 @@ TEST_HOSTNAME = ("127.0.0.1", 3938)
 
 @pytest.mark.asyncio
 async def test_equal_hashes(mddb_server, mddb_client):
-    await mddb_client.connect(add_db_permissions=True)
+    await mddb_client.connect()
     assert mddb_client._is_connected
     assert not mddb_client.pulled_db
 
@@ -19,6 +19,6 @@ async def test_not_equal_hashes(mddb_server, mddb_client):
     with open('test_db2', 'w') as f:
         json.dump({'bla': 1}, f)
 
-    await mddb_client.connect(add_db_permissions=True)
+    await mddb_client.connect()
     assert mddb_client._is_connected
     assert mddb_client.pulled_db

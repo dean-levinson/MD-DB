@@ -22,9 +22,6 @@ class DBUsers(object):
 
         return client_info
 
-    def is_admin(self, client_id):
-        return self.get_client_info['is_admin']
-
     def is_correct_password(self, client_id, password):
         return self.get_client_info(client_id)['password'] == password
 
@@ -34,7 +31,6 @@ class DBUsers(object):
             logging.error(f"Client ID {client_id} already exist!")
             raise ClientIDAlreadyExists()
         except ClientIDDoesNotExist:
-            # The user doesn not exists, add it
             logging.info(f"Adding user {client_id}!")
             self.db_actions.add_item(client_id, {
                 'password': password,
@@ -43,23 +39,12 @@ class DBUsers(object):
             })
             logging.debug(f'User {client_id} was added!')
 
-    def is_user_exists(self, client_id: int) -> bool:
-        try:
-            self.get_client_info(client_id)
-            return True
-        except ClientIDDoesNotExist:
-            return False
-
     def add_db_permission(self, client_id, db_name):
         client_info = self.get_client_info(client_id)
         is_admin = client_info['is_admin']
 
         if not is_admin:
             logging.error("Only admins can add permissions!")
-            raise ClientNotAllowed()
-
-        if db_name == self.db_name and not is_admin:
-            logging.error("Only admins can access users DB!")
             raise ClientNotAllowed()
 
         if db_name not in client_info['allowed_dbs']:

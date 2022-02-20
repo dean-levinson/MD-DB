@@ -77,12 +77,6 @@ class Client(object):
         await self.send_protobuf(message)
         await self.__get_init_conn_result()
 
-    async def _add_db_permissions(self):
-        message = md_pb2.InitConn(action_type=InitConnActions.ADD_PERMISSIONS, client_id=self.client_id,
-                                  db_name=self.db_name)
-        await self.send_protobuf(message)
-        await self.__get_init_conn_result()
-
     async def _check_hash(self, db_hash):
         message = md_pb2.InitConn(action_type=InitConnActions.CHECK_DB_HASH, db_hash=db_hash)
         await self.send_protobuf(message)
