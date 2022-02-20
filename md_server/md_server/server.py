@@ -38,9 +38,7 @@ class Server(object):
                     self.db_sessions.pop(session.db_name)
 
     async def handle_session_request(self, db_name, request):
-        # Local db was updated in Session
-
-        # Update other clients dbs
-        logging.debug(f"Updating {db_name} on all clients")
+        # Update local clients dbs
+        logging.info(f"Updating all clients connected to {db_name}")
         for session in self.db_sessions[db_name]:
             await session.update_client(request)

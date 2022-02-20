@@ -53,22 +53,21 @@ class MDActions(object):
         message = DBMessage()
         message.ParseFromString(protobuf_obj)
         logging.debug(f"Parsed message {message}")
-
         if message.message_type == MessageTypes.DB_ACTION:
             action = message.db_action
             match action.action_type:
                 case Actions.ADD_ITEM:
-                    self.add_item(key=action.key, value=get_db_value(message))
+                    self.add_item(key=action.key, value=get_db_value(message), update_local=True)
                 case Actions.SET_VALUE:
-                    self.set_value(key=action.key, value=get_db_value(message))
+                    self.set_value(key=action.key, value=get_db_value(message), update_local=True)
                 case Actions.GET_KEY_VALUE:
                     return serialize_db_value(self.get_key_value(key=action.key))
                 case Actions.GET_ALL_KEYS:
                     return serialize_db_value(self.get_all_keys())
                 case Actions.DELETE_KEY:
-                    self.delete_key(key=action.key)
+                    self.delete_key(key=action.key, update_local=True)
                 case Actions.DELETE_DB:
-                    self.delete_db()
+                    self.delete_db(update_local=True)
 
         elif message.message_type == MessageTypes.DB_RESULT:
             logging.info(f"Result of last operation: {message.db_result.result}")
@@ -108,7 +107,10 @@ class MDActions(object):
         def deco(func):
             @functools.wraps(func)
             def wrapper(self, *args, **kwargs):
-                if self.is_client:
+                update_local = False
+                if 'update_local' in kwargs.keys():
+                    update_local = kwargs['update_local']
+                if self.is_client and not update_local:
                     return self._get_client_request(action_type, *args)
                 with open(self.db_path, 'r') as db_descriptor:
                     self.db_data = json.load(db_descriptor)
@@ -127,7 +129,7 @@ class MDActions(object):
         return deco
 
     @db_transaction(write_to_db=True, action_type=Actions.ADD_ITEM)
-    def add_item(self, key, value=None):
+    def add_item(self, key, value=None, update_local=False):
         key = str(key)
         if key in self.db_data:
             logging.error(f"{key} already exist in DB '{self.db_path}'")
@@ -135,7 +137,7 @@ class MDActions(object):
         self.db_data[key] = value
 
     @db_transaction(write_to_db=True, action_type=Actions.SET_VALUE)
-    def set_value(self, key, value):
+    def set_value(self, key, value, update_local=False):
         key = str(key)
         self.db_data[key] = value
 
@@ -152,7 +154,7 @@ class MDActions(object):
         return list(self.db_data.keys())
 
     @db_transaction(write_to_db=True, action_type=Actions.DELETE_KEY)
-    def delete_key(self, key):
+    def delete_key(self, key, update_local=False):
         key = str(key)
         if key not in self.db_data:
             raise KeyDoesNotExists()
@@ -160,7 +162,7 @@ class MDActions(object):
         del self.db_data[key]
 
     @db_transaction(write_to_db=False, action_type=Actions.DELETE_DB)
-    def delete_db(self):
+    def delete_db(self, update_local=False):
         logging.info(f'deleting db {self.db_path}!')
         os.remove(self.db_path)
         if self.is_client:

@@ -15,6 +15,7 @@ from mdlib.exceptions import *
 
 Handler = namedtuple("Handler", ["handler", "is_async"])
 
+
 def validate_args_kwargs(arguments):
     def decorator(func):
         def validator(*args, **kwargs):
@@ -145,8 +146,7 @@ class Session(object):
     async def handle_session(self):
         await self._init_conn()
 
-        if not self.db_actions:
-            raise Exception("Unexpected state... db_actions should be initialized")
+        self.db_actions = MDActions(self.server.directory, self.db_name, None)
 
         while True:
             request = await self.reader.read()
@@ -157,14 +157,17 @@ class Session(object):
             try:
                 result = await self.db_actions.handle_protobuf(request)
                 logging.debug(f"Result is: {result}")
-                if result is not None:
-                    message.db_value.value_type, message.db_value.value = result
             except Exception as e:
                 logging.error(f"Got Exception on {self} while handling a request!\n{traceback.format_exc()}")
                 message.db_result.result = EXCEPTIONS_TO_RESULT[type(e)]
 
+            if result is not None:
+                message.db_value.value_type, message.db_value.value = result
+            else:
+                # If result is none, command was to update something in DB. Notify all relevant clients.
+                await self.server.handle_session_request(self.db_name, bytes(request))
+            # send our client the response message
             await self.send_protobuf(message)
-            await self.server.handle_session_request(self.db_name, bytes(request))
 
     def _check_db_md5(self, client_db_hash):
         db_hash = get_db_md5(self.db_path)

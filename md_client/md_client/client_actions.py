@@ -20,9 +20,10 @@ class ClientActions(object):
 
     def __handle_coroutine(self, task_coroutine, channel_coroutine):
         try:
+
             db_result = channel_coroutine.result(5)
-            if db_result.result != Results.SUCCESS:
-                raise RESULTS_TO_EXCEPTIONS[db_result.result]
+            if db_result.db_result.result != Results.SUCCESS:
+                raise RESULTS_TO_EXCEPTIONS[db_result.db_result.result]
             return db_result
 
         except concurrent.futures.TimeoutError as e:
