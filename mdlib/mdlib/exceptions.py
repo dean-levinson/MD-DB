@@ -28,3 +28,6 @@ class ClientIDDoesNotExist(Exception):
 
 class ClientNotAllowed(Exception):
     pass
+
+class IncorrectPassword(Exception):
+    pass

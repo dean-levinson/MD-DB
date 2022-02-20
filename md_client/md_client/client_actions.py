@@ -1,11 +1,11 @@
-import ast
 import asyncio
 import logging
 import concurrent.futures
 from mdlib.md_pb2 import Actions, DBResult, Results
+from mdlib.db_utils import serialize_db_value
 
 from md_client.client import Client
-from mdlib.db_utils import RESULTS_TO_EXCEPTIONS
+from mdlib.db_utils import RESULTS_TO_EXCEPTIONS, get_db_value
 
 
 class ClientActions(object):
@@ -53,7 +53,7 @@ class ClientActions(object):
         task_coroutine = asyncio.run_coroutine_threadsafe(self.__get_all_keys_inner(), self.__loop)
         db_result = self.__handle_coroutine(task_coroutine,
                                             asyncio.run_coroutine_threadsafe(self.__channel.get(), self.__loop))
-        return ast.literal_eval(db_result.result_value)
+        return get_db_value(db_result)
 
     def set_value(self, key, value):
         task_coroutine = asyncio.run_coroutine_threadsafe(self.__set_value_inner(key, value), self.__loop)
@@ -64,7 +64,7 @@ class ClientActions(object):
         task_coroutine = asyncio.run_coroutine_threadsafe(self.__get_key_value_inner(key), self.__loop)
         db_result = self.__handle_coroutine(task_coroutine,
                                             asyncio.run_coroutine_threadsafe(self.__channel.get(), self.__loop))
-        return db_result.result_value
+        return get_db_value(db_result)
 
     def delete_key(self, key):
         task_coroutine = asyncio.run_coroutine_threadsafe(self.__delete_key(key), self.__loop)

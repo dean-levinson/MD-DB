@@ -39,8 +39,8 @@ def kill_event_loop(thread, loop):
 @click.option("--dbname", "-d", type=str, required=True)
 @click.option("--dbdir", type=str, required=False, default=".")
 @click.option("--add-user", type=bool, required=False, is_flag=True, default=False)
-@click.option("--add-permissions", type=bool, required=False, is_flag=True, default=False)
-def main(client_id, host, port, dbname, dbdir, add_user, add_permissions):
+@click.option("--password", type=str, required=True)
+def main(client_id, host, port, dbname, dbdir, add_user, password):
     # Fixes Windows errors while running from cmd
     if sys.version_info[0] == 3 and sys.version_info[1] >= 8 and sys.platform.startswith('win'):
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
@@ -49,26 +49,25 @@ def main(client_id, host, port, dbname, dbdir, add_user, add_permissions):
     loop = asyncio.new_event_loop()
     channel = asyncio.Queue()
     client_id = client_id
-    client = Client((host, port), dbname, client_id, channel, db_directory=dbdir)
+    client = Client((host, port), dbname, client_id, password, channel, db_directory=dbdir)
 
     thread = threading.Thread(target=db_backend, args=(loop,))
     thread.start()
 
-    # handler = asyncio.run_coroutine_threadsafe(run(client, add_user, add_permissions), loop)
-    
-    connect_handler = asyncio.run_coroutine_threadsafe(client.connect(add_user, add_permissions), loop)
-    
+    connect_handler = asyncio.run_coroutine_threadsafe(client.connect(add_user), loop)
+
     try:
         # Wait up to 5 seconds to the server to connect
-        connection_result = connect_handler.result(5)
+        connect_handler.result(5)
     except Exception as e:
+        logging.exception(e)
         kill_event_loop(thread, loop)
         error = termcolor.colored(f"{e.__class__.__name__}", "red", attrs=["bold"])
         logging.error(f"Error while trying to connect to server: {error}")
         logging.error(traceback.format_exc())
         return
 
-    client_handler = asyncio.run_coroutine_threadsafe(client.sync_with_remote(), loop)
+    asyncio.run_coroutine_threadsafe(client.sync_with_remote(), loop)
 
     banner = termcolor.colored("\nWelcome to MD-DB!", "green", attrs=["bold"])
     banner2 = termcolor.colored("Use client.* functions\n", "white", attrs=["bold"])

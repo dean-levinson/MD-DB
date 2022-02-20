@@ -6,7 +6,7 @@ import traceback
 import functools
 from collections import namedtuple
 from mdlib import md_pb2
-from mdlib.md_pb2 import InitConnActions, Results, DBResult
+from mdlib.md_pb2 import InitConn, InitConnActions, Results, DBResult
 from mdlib.exceptions import InvalidAction
 from mdlib.md_pb2 import DBMessage, MessageTypes, Results
 from mdlib.socket_utils import LengthReader, LengthWriter
@@ -14,8 +14,6 @@ from mdlib.db_utils import get_db_md5, MDActions, EXCEPTIONS_TO_RESULT
 from mdlib.exceptions import *
 
 Handler = namedtuple("Handler", ["handler", "is_async"])
-ExceptionTuple = namedtuple("ExceptionTuple", ["should_raise", "exception_type"])
-
 
 def validate_args_kwargs(arguments):
     def decorator(func):
@@ -27,22 +25,6 @@ def validate_args_kwargs(arguments):
             return func(*args, **kwargs)
 
         return validator
-
-    return decorator
-
-
-def send_init_conn_result():
-    async def decorator(func):
-        @functools.wraps(func)
-        async def wrapper(self, *args, **kwargs):
-            message = md_pb2.DBResult()
-            try:
-                func(self, *args, **kwargs)
-                message.result = Results.SUCCESS
-            except Exception as e:
-                message.result = EXCEPTIONS_TO_RESULT[type(e)]
-            await self.send_protobuf(message)
-        return wrapper
 
     return decorator
 
@@ -65,60 +47,51 @@ class Session(object):
         self.checked_state = False
 
         self.handlers = {
+            InitConnActions.LOGIN: Handler(self.handle_login, True),
             InitConnActions.ADD_USER: Handler(self.handle_add_user, True),
-            InitConnActions.ADD_PERMISSIONS: Handler(self.handle_add_permissions, True),
-            InitConnActions.DB_INFO: Handler(self.handle_db_info, True),
             InitConnActions.CHECK_DB_HASH: Handler(self.handle_check_db_hash, False),
             InitConnActions.GET_DB_STATE: Handler(self.handle_get_db_state, True),
             InitConnActions.GET_DB: Handler(self.handle_get_db, True),
-            InitConnActions.INIT_DONE: Handler(self.handle_init_done, False)
         }
 
-    @validate_args_kwargs(['client_id'])
+    @validate_args_kwargs(['client_id', 'password', 'db_name'])
+    async def handle_login(self, *args, **kwargs):
+        client_id = kwargs['client_id']
+        db_name = kwargs['db_name']
+        password = kwargs['password']
+        logging.info(f"Got login request from {client_id} to {db_name}")
+
+        self.client_id = client_id
+        self.db_name = db_name
+
+        message = md_pb2.DBResult()
+        try:
+            if self.server.users.is_correct_password(client_id, password):
+                if self.server.users.check_client_permissions(self.client_id, self.db_name):
+                    logging.info(f"Client {self.client_id} connected successfully to db {self.db_name}")
+                    self.is_user_verified = True
+                    self.server_sessions[self.client_id] = self
+                    self.server_db_sessions.setdefault(self.db_name, []).append(self)
+                    message.result = Results.SUCCESS
+                else:
+                    logging.info(f"Client {self.client_id} not allowed to access {self.db_name}")
+                    message.result = Results.USER_NOT_ALLOWED
+            else:
+                message.result = Results.INCORRECT_PASSWORD
+                logging.info(f"Client {self.client_id} passed incorrect password!")
+        except ClientIDDoesNotExist:
+            message.result = Results.USER_DOES_NOT_EXISTS
+
+        await self.send_protobuf(message)
+
+    @validate_args_kwargs(['client_id', 'password'])
     async def handle_add_user(self, *args, **kwargs):
         message = md_pb2.DBResult()
         try:
-            self.server.users.add_user(kwargs['client_id'])
+            self.server.users.add_user(kwargs['client_id'], kwargs['password'])
             message.result = Results.SUCCESS
         except Exception as e:
             message.result = EXCEPTIONS_TO_RESULT[type(e)]
-        
-        await self.send_protobuf(message)
-
-    @validate_args_kwargs(['client_id', 'db_name'])
-    async def handle_add_permissions(self, *args, **kwargs):
-        message = md_pb2.DBResult()
-        try:
-            self.server.users.add_db_permission(kwargs['client_id'], kwargs['db_name'])
-            message.result = Results.SUCCESS
-        except Exception as e:
-            message.result = EXCEPTIONS_TO_RESULT[type(e)]
-        
-        await self.send_protobuf(message)
-
-    @validate_args_kwargs(['client_id', 'db_name'])
-    async def handle_db_info(self, *args, **kwargs):
-        message = md_pb2.DBResult()
-        self.client_id = kwargs['client_id']
-        self.db_name = kwargs['db_name']
-        
-        try:
-            is_user_allowed = self.server.users.check_client_permissions(self.client_id, self.db_name)
-            if not is_user_allowed:
-                logging.info(f"Client {self.client_id} not allowed to access {self.db_name}")
-                message.result = Results.USER_NOT_ALLOWED
-            else:
-                logging.info(f"Client {self.client_id} connected to db {self.db_name}")
-                self.is_user_verified = True
-                self.server_sessions[self.client_id] = self
-                self.server_db_sessions.setdefault(self.db_name, []).append(self)
-                message.result = Results.SUCCESS
-
-                # After successful negotiation, creates db_actions
-                self.db_actions = MDActions(self.server.directory, self.db_name, None)
-
-        except ClientIDDoesNotExist:
-            message.result = Results.USER_DOES_NOT_EXISTS
 
         await self.send_protobuf(message)
 
@@ -139,9 +112,6 @@ class Session(object):
 
         message = md_pb2.InitConn(action_type=InitConnActions.GET_DB, db_file=db_file)
         await self.send_protobuf(message)
-
-    def handle_init_done(self, *args, **kwargs):
-        logging.error("Client does not determine when init is done")
 
     async def _init_conn(self):
         while (not self.is_check_hash or
@@ -187,7 +157,8 @@ class Session(object):
             try:
                 result = await self.db_actions.handle_protobuf(request)
                 logging.debug(f"Result is: {result}")
-                message.db_result.result_value = str(result)
+                if result is not None:
+                    message.db_value.value_type, message.db_value.value = result
             except Exception as e:
                 logging.error(f"Got Exception on {self} while handling a request!\n{traceback.format_exc()}")
                 message.db_result.result = EXCEPTIONS_TO_RESULT[type(e)]

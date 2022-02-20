@@ -12,6 +12,13 @@ enum MessageTypes {
     DB_RESULT = 1;
 }
 
+message DBMessage {
+    MessageTypes message_type = 1;
+    optional DBAction db_action = 2;
+    optional DBResult db_result = 3;
+    optional DBValue db_value = 4;
+}
+
 enum Results {
     SUCCESS = 0;
     KEY_DOES_NOT_EXISTS = 1;
@@ -19,17 +26,11 @@ enum Results {
     USER_ALREADY_EXISTS = 3;
     USER_DOES_NOT_EXISTS = 4;
     USER_NOT_ALLOWED = 5;
+    INCORRECT_PASSWORD = 6;
 }
 
 message DBResult {
     Results result = 1;
-    optional string result_value = 2;
-}
-
-message DBMessage {
-    MessageTypes message_type = 1;
-    optional DBAction db_action = 2;
-    optional DBResult db_result = 3;
 }
 
 enum Actions {
@@ -44,17 +45,27 @@ enum Actions {
 message DBAction {
     Actions action_type = 1;
     optional string key = 2;
-    optional string value = 3;
+}
+
+enum ValueType {
+    INT = 0;
+    STR = 1;
+    PYTHON_OBJ = 2;
+}
+
+message DBValue {
+    ValueType value_type = 1;
+    bytes value = 2;
 }
 
 enum InitConnActions {
     ADD_USER = 0;
-    ADD_PERMISSIONS = 1;
-    DB_INFO = 2;
-    CHECK_DB_HASH = 3;
-    GET_DB_STATE = 4;
-    GET_DB = 5;
-    INIT_DONE = 6;
+    DB_INFO = 1;
+    CHECK_DB_HASH = 2;
+    GET_DB_STATE = 3;
+    GET_DB = 4;
+    INIT_DONE = 5;
+    LOGIN = 6;
 }
 
 message InitConn {
@@ -64,5 +75,6 @@ message InitConn {
     optional string db_hash = 4;
     optional bytes db_file = 5;
     optional bool state = 6;
+    optional string password = 7;
 }
 
