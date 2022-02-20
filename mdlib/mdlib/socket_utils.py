@@ -7,6 +7,10 @@ class LengthReader(asyncio.StreamReader):
         self.reader = reader
 
     async def read(self):
+        """
+        Reads the 4 bytes which encode the message's size,
+        then reads the rest of the message using the size it got.
+        """
         size = await self.reader.read(4)
         total_size = struct.unpack('>I', size)[0]
         if total_size > 0:
@@ -19,6 +23,9 @@ class LengthWriter(asyncio.StreamWriter):
         self.writer = writer
 
     async def write(self, data):
+        """
+        Send the message and 4 bytes representing the length of the message.
+        """
         buf = struct.pack('>I', len(data))
         if len(data) > 0:
             buf += data

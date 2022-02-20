@@ -27,17 +27,20 @@ class MDActions(object):
     for md_server - Change the local db.
     """
 
-    def __init__(self, db_directory, db_name, channel=None, is_client=False):
-        self.db_directory = db_directory
-        self.db_name = db_name
-        self.db_path = os.path.join(self.db_directory, self.db_name)
-        self.is_client = is_client
+    def __init__(self, db_directory: str, db_name: str, channel: asyncio.Queue = None, is_client: bool = False):
+        self.db_directory: str = db_directory
+        self.db_name: str = db_name
+        self.db_path: str = os.path.join(self.db_directory, self.db_name)
+        self.is_client: bool = is_client
         self.channel: asyncio.Queue = channel
 
-        self.db_data = {}
+        self.db_data: dict = {}
         self.load_db_data()
 
     def load_db_data(self):
+        """
+        Load the db data from the file. If the db does not exist, creates an empty one.
+        """
         if not os.path.exists(self.db_path):
             logging.info(f"Requested db {self.db_path} doesn't exist! Creating a new empty db.")
             self.create_db()
@@ -45,36 +48,45 @@ class MDActions(object):
             self.db_data = json.load(db_descriptor)
 
     def create_db(self):
+        """
+        Creates a new empty db.
+        """
         # No need to update other client because this is a new db
         with open(self.db_path, 'w') as db_descriptor:
             json.dump({}, db_descriptor)
 
-    async def handle_protobuf(self, protobuf_obj):
+    async def handle_protobuf(self, protobuf_obj: DBMessage):
+        """
+        Parses the protobuf and calls the function to handle it.
+        """
         message = DBMessage()
         message.ParseFromString(protobuf_obj)
-
+        logging.debug(f"Parsed message {message}")
         if message.message_type == MessageTypes.DB_ACTION:
             action = message.db_action
             match action.action_type:
                 case Actions.ADD_ITEM:
-                    self.add_item(key=action.key, value=get_db_value(message))
+                    self.add_item(key=action.key, value=get_db_value(message), update_local=True)
                 case Actions.SET_VALUE:
-                    self.set_value(key=action.key, value=get_db_value(message))
+                    self.set_value(key=action.key, value=get_db_value(message), update_local=True)
                 case Actions.GET_KEY_VALUE:
                     return serialize_db_value(self.get_key_value(key=action.key))
                 case Actions.GET_ALL_KEYS:
                     return serialize_db_value(self.get_all_keys())
                 case Actions.DELETE_KEY:
-                    self.delete_key(key=action.key)
+                    self.delete_key(key=action.key, update_local=True)
                 case Actions.DELETE_DB:
-                    self.delete_db()
+                    self.delete_db(update_local=True)
 
         elif message.message_type == MessageTypes.DB_RESULT:
             logging.info(f"Result of last operation: {message.db_result.result}")
             if self.channel is not None:
                 await self.channel.put(message)
 
-    def _get_client_request(self, action_type, key=None, value=None):
+    def _get_client_request(self, action_type: Actions, key: str = None, value=None):
+        """
+        Creates the request's protobuf the client needs to send the server.
+        """
         message = DBMessage()
         if action_type is None:
             raise InvalidAction()
@@ -103,12 +115,22 @@ class MDActions(object):
         with open(self.db_path, 'w') as db_descriptor:
             json.dump(self._tmp_db_dict, db_descriptor)
 
-    def db_transaction(write_to_db=True, action_type=None):
+    def db_transaction(write_to_db: bool = True, action_type: Actions = None):
+        """
+        Wraps the functions that implement db actions.
+        @param bool write_to_db: Whether the function needs to flush to the db file at the end.
+        @param Actions action_type: The type of actions that needs to be in the request to the server.
+        """
+
         def deco(func):
             @functools.wraps(func)
             def wrapper(self, *args, **kwargs):
-                if self.is_client:
+                update_local = False
+                if 'update_local' in kwargs.keys():
+                    update_local = kwargs['update_local']
+                if self.is_client and not update_local:
                     return self._get_client_request(action_type, *args)
+
                 with open(self.db_path, 'r') as db_descriptor:
                     self.db_data = json.load(db_descriptor)
 
@@ -126,7 +148,10 @@ class MDActions(object):
         return deco
 
     @db_transaction(write_to_db=True, action_type=Actions.ADD_ITEM)
-    def add_item(self, key, value=None):
+    def add_item(self, key: str, value=None, update_local=False):
+        """
+        Add the item (key, value) to the db.
+        """
         key = str(key)
         if key in self.db_data:
             logging.error(f"{key} already exist in DB '{self.db_path}'")
@@ -134,12 +159,18 @@ class MDActions(object):
         self.db_data[key] = value
 
     @db_transaction(write_to_db=True, action_type=Actions.SET_VALUE)
-    def set_value(self, key, value):
+    def set_value(self, key, value, update_local=False):
+        """
+        Set the value of `key` to `value`.
+        """
         key = str(key)
         self.db_data[key] = value
 
     @db_transaction(write_to_db=False, action_type=Actions.GET_KEY_VALUE)
     def get_key_value(self, key):
+        """
+        Returns the value of key.
+        """
         key = str(key)
         if key not in self.db_data.keys():
             raise KeyDoesNotExists()
@@ -147,11 +178,16 @@ class MDActions(object):
 
     @db_transaction(write_to_db=False, action_type=Actions.GET_ALL_KEYS)
     def get_all_keys(self):
-        # Returns an array of all keys in db
+        """
+        Return a list of all keys in the db
+        """
         return list(self.db_data.keys())
 
     @db_transaction(write_to_db=True, action_type=Actions.DELETE_KEY)
-    def delete_key(self, key):
+    def delete_key(self, key, update_local=False):
+        """
+        Deleted the key `key` and it's value from the db.
+        """
         key = str(key)
         if key not in self.db_data:
             raise KeyDoesNotExists()
@@ -159,7 +195,10 @@ class MDActions(object):
         del self.db_data[key]
 
     @db_transaction(write_to_db=False, action_type=Actions.DELETE_DB)
-    def delete_db(self):
+    def delete_db(self, update_local=False):
+        """
+        Deletes the db file.
+        """
         logging.info(f'deleting db {self.db_path}!')
         os.remove(self.db_path)
         if self.is_client:
@@ -167,7 +206,10 @@ class MDActions(object):
             pass
 
 
-def get_db_md5(db_name):
+def get_db_md5(db_name: str):
+    """
+    Returns the hash (md5) of the db `db_name`
+    """
     logging.info(f"dbname: {db_name}")
     with open(db_name, 'rb') as db:
         data = db.read()
@@ -175,6 +217,9 @@ def get_db_md5(db_name):
 
 
 def get_db_value(protobuf_obj):
+    """
+    Returns the value of the DBValue object in the protobuf. Keeps the original python type.
+    """
     if not isinstance(protobuf_obj, DBMessage):
         message = DBMessage()
         message.ParseFromString(protobuf_obj)
@@ -189,6 +234,10 @@ def get_db_value(protobuf_obj):
 
 
 def serialize_db_value(value):
+    """
+    Serializes a value correctly to the protobuf object DBValue. This is done in order
+    to keep the original python type.
+    """
     if isinstance(value, int):
         return ValueType.INT, str(value).encode('utf-16')
     elif isinstance(value, str):

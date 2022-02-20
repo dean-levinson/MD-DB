@@ -10,7 +10,14 @@ logging.basicConfig(level=logging.INFO, format="[%(levelname)s]: %(message)s")
 AddAdminUserParams = namedtuple("AddAdminUserParams", ["should_add", "client_id", "password"])
 
 
-async def run(host, port, add_admin_params, dbdir):
+async def run(host: str, port: int, add_admin_params: AddAdminUserParams, dbdir: str):
+    """
+    The main function that creates the Server object, it's sockets and servers as long as the server is running.
+    @param str host: The host the server is listening on. If None the server will be listening on all interfaces.
+    @param int port: The port the server will be listening on. Should be not in use on the host.
+    @param AddAdminUserParams add_admin_params: Includes params that are used to add a new admin to the server.
+    @param str dbdir: The directory in which the server will keep all it's dbs.
+    """
     if sys.version_info[0] == 3 and sys.version_info[1] >= 8 and sys.platform.startswith('win'):
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 

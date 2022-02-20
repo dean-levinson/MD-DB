@@ -26,7 +26,10 @@ class Client(object):
         self._is_connected = False
         self.pulled_db = False
 
-    async def connect(self, add_user=False):
+    async def connect(self, add_user: bool = False):
+        """
+        Connects the client to the server. Creates the sockets, and starts initialization procedure
+        """
         if self._is_connected:
             raise AlreadyConnected()
 
@@ -40,10 +43,16 @@ class Client(object):
         return True
 
     async def disconnect(self):
+        """
+        Disconnects the client from the server. Closes the socket.
+        """
         self.writer.close()
         await self.writer.wait_closed()
 
     async def sync_with_remote(self):
+        """
+        Async function that waits for protobuf from server and handles them.
+        """
         try:
             while True:
                 if self.reader:
@@ -54,15 +63,21 @@ class Client(object):
             pass
 
     async def login(self):
-        message = md_pb2.InitConn(action_type=InitConnActions.LOGIN, 
-                                  client_id=self.client_id, 
+        """
+        Logins the client to the server, sends the client's relevant properties.
+        """
+        message = md_pb2.InitConn(action_type=InitConnActions.LOGIN,
+                                  client_id=self.client_id,
                                   db_name=self.db_name,
                                   password=self.password)
 
         await self.send_protobuf(message)
         await self.__get_init_conn_result()
 
-    async def _init_conn(self, add_user=False):
+    async def _init_conn(self, add_user: bool = False):
+        """
+        Handles initialization of the connection.
+        """
         if add_user:
             await self._add_user()
 
@@ -70,14 +85,20 @@ class Client(object):
         await self.pull_db()
 
     async def _add_user(self):
-        message = md_pb2.InitConn(action_type=InitConnActions.ADD_USER, 
+        """
+        Sends a `add_user` request to the server
+        """
+        message = md_pb2.InitConn(action_type=InitConnActions.ADD_USER,
                                   client_id=self.client_id,
                                   password=self.password)
 
         await self.send_protobuf(message)
         await self.__get_init_conn_result()
 
-    async def _check_hash(self, db_hash):
+    async def _check_hash(self, db_hash: str):
+        """
+        Checks if `db_hash` is the same hash as the local db's hash.
+        """
         message = md_pb2.InitConn(action_type=InitConnActions.CHECK_DB_HASH, db_hash=db_hash)
         await self.send_protobuf(message)
         message = md_pb2.InitConn(action_type=InitConnActions.GET_DB_STATE)
@@ -92,6 +113,9 @@ class Client(object):
         return message.state
 
     async def pull_db(self):
+        """
+        Verifies the local db is the same as the server's db or updates it if needed.
+        """
         db_path = os.path.join(self.db_directory, self.db_name)
         db_hash = get_db_md5(db_path)
         while not await self._check_hash(db_hash):
@@ -110,12 +134,19 @@ class Client(object):
             db_hash = get_db_md5(db_path)
 
     async def send_protobuf(self, protobuf):
+        """
+        Sends the given protobuf to the server.
+        Serializes the protobuf if needed.
+        """
         if isinstance(protobuf, (str, bytes)):
             # protobuf was already serialized
             await self.writer.write(protobuf)
         await self.writer.write(protobuf.SerializeToString())
 
     async def __get_init_conn_result(self):
+        """
+        Gets response from a DBResult object and raises exception accordingly.
+        """
         message = md_pb2.DBResult()
         data = await self.reader.read()
         message.ParseFromString(data)

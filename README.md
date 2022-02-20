@@ -7,7 +7,7 @@ Required python3.10+
 
 * Compile the .proto file:
 ```cmd
-\D-DB\external\protoc-3.19.4-win64> bin\protoc.exe -I=..\..\ --python_out=..\..\ ..\..\mdlib\mdlib\md.proto
+<PROJECT_DIRECTORY>\external\protoc-3.19.4-win64> bin\protoc.exe -I=..\..\ --python_out=..\..\ ..\..\mdlib\mdlib\md.proto
 ```
 
 * Install the packages:

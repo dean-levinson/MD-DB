@@ -6,6 +6,7 @@ import threading
 from concurrent import futures
 import IPython
 import termcolor
+import traceback
 
 from md_client.client import Client
 from md_client.client_actions import ClientActions
@@ -15,6 +16,10 @@ logging.basicConfig(level=logging.ERROR, format="[%(levelname)s]: %(message)s")
 
 
 def db_backend(loop: asyncio.AbstractEventLoop):
+    """
+    Sets the event_loop that holds all the client's tasks.
+    closes the tasks gracefully when the loop is done.
+    """
     asyncio.set_event_loop(loop)
     loop.run_forever()
 
@@ -23,7 +28,10 @@ def db_backend(loop: asyncio.AbstractEventLoop):
         loop.run_until_complete(t)
 
 
-def kill_event_loop(thread, loop):
+def kill_event_loop(thread: threading.Thread, loop: asyncio.AbstractEventLoop):
+    """
+    kills the event loop and makes sure the thread closes as well.
+    """
     for task in asyncio.tasks.all_tasks(loop):
         task.cancel()
 
@@ -63,6 +71,7 @@ def main(client_id, host, port, dbname, dbdir, add_user, password):
         kill_event_loop(thread, loop)
         error = termcolor.colored(f"{e.__class__.__name__}", "red", attrs=["bold"])
         logging.error(f"Error while trying to connect to server: {error}")
+        logging.error(traceback.format_exc())
         return
 
     asyncio.run_coroutine_threadsafe(client.sync_with_remote(), loop)
@@ -75,7 +84,7 @@ def main(client_id, host, port, dbname, dbdir, add_user, password):
 
     IPython.start_ipython(
         user_ns={
-            'client': ClientActions(loop, client, channel, dbname, dbdir)
+            'client': ClientActions(loop, client, channel)
         },
         argv=[],
         config=config
