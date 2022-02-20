@@ -32,7 +32,7 @@ def validate_args_kwargs(arguments):
 
 class Session(object):
     def __init__(self, server, reader: asyncio.StreamReader, writer: asyncio.StreamWriter, directory: str,
-                 sessions: dict, db_sessions: dict):
+                 db_sessions: dict):
         self.server = server
         self.reader = LengthReader(reader)
         self.writer = LengthWriter(writer)
@@ -40,7 +40,6 @@ class Session(object):
         self.db_name = None
         self.db_actions = None  # can exist only after db_name is known
         self.directory = directory
-        self.server_sessions = sessions
         self.server_db_sessions = db_sessions
 
         self.is_user_verified = False
@@ -71,7 +70,6 @@ class Session(object):
                 if self.server.users.check_client_permissions(self.client_id, self.db_name):
                     logging.info(f"Client {self.client_id} connected successfully to db {self.db_name}")
                     self.is_user_verified = True
-                    self.server_sessions[self.client_id] = self
                     self.server_db_sessions.setdefault(self.db_name, []).append(self)
                     message.result = Results.SUCCESS
                 else:
