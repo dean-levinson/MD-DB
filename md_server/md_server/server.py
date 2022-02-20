@@ -15,6 +15,10 @@ class Server(object):
         self.users = DBUsers(self.directory, add_admin_params)
 
     async def handle_conn(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
+        """
+        Handles every new connection the server gets.
+        For each new connection a Session object is initialized.
+        """
         peer = writer.get_extra_info('peername')
         logging.info(f"Got client connection from {peer}")
         session = Session(self, reader, writer, self.directory, self.db_sessions)
@@ -31,7 +35,14 @@ class Server(object):
                 if len(self.db_sessions[session.db_name]) == 0:
                     self.db_sessions.pop(session.db_name)
 
-    async def handle_session_request(self, db_name, request):
+    async def handle_session_request(self, db_name: str, request):
+        """
+        Updates all the clients that are connected to db `dbnanme` with the request.
+        This will allow the clients to update their local dbs.
+        @param str db_name: The name of the db the request is related to.
+        @param request: The protobuf that will be sent to all relevant clients.
+        """
+
         # Update local clients dbs
         logging.info(f"Updating all clients connected to {db_name}")
         for session in self.db_sessions[db_name]:
