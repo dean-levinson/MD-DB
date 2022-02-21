@@ -192,8 +192,9 @@ class Session(object):
             if result is not None:
                 message.db_value.value_type, message.db_value.value = result
             else:
-                # If result is none, command was to update something in DB. Notify all relevant clients.
+                # If result is None, command was to update something in DB. Notify all relevant clients.
                 await self.server.handle_session_request(self.db_name, bytes(request))
+
             # send our client the response message
             await self.send_protobuf(message)
 
