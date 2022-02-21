@@ -1,0 +1,1 @@
+{"1234": {"password": "123", "is_admin": true, "allowed_dbs": ["users"]}, "4321": {"password": "password", "is_admin": false, "allowed_dbs": ["test_db"]}, "321": {"password": "umpermitted", "is_admin": false, "allowed_dbs": []}, "5432": {"password": "going_to_be_permitted", "is_admin": false, "allowed_dbs": []}}

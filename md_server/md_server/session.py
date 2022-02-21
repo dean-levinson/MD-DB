@@ -173,6 +173,7 @@ class Session(object):
         Does initialization actions, then starts the main loop that is waiting for messages
         from the client.
         """
+        result = None
         await self._init_conn()
 
         while True:

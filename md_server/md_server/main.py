@@ -2,12 +2,10 @@ import sys
 import click
 import asyncio
 import logging
-from collections import namedtuple
-from md_server.server import Server
+
+from md_server.server import Server, AddAdminUserParams
 
 logging.basicConfig(level=logging.INFO, format="[%(levelname)s]: %(message)s")
-
-AddAdminUserParams = namedtuple("AddAdminUserParams", ["should_add", "client_id", "password"])
 
 
 async def run(host: str, port: int, add_admin_params: AddAdminUserParams, dbdir: str):
