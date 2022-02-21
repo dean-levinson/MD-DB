@@ -9,11 +9,13 @@ async def test_get_all_keys(mddb_client: Client):
 
 
 @pytest.mark.asyncio
-async def test_set_value(mddb_client: Client):
-    await run_client_action(mddb_client, "set_value", "21", 12)
-    db_result = await run_client_action(mddb_client, "get_key_value", "21", should_read_result=True)
+@pytest.mark.parametrize("item", [("new_key", [1, 2, 3]), ("another_new_key", {"a": "b"})])
+async def test_set_value(mddb_client: Client, item):
+    key, new_value = item
+    await run_client_action(mddb_client, "set_value", key, new_value)
+    db_result = await run_client_action(mddb_client, "get_key_value", key, should_read_result=True)
 
-    assert db_result == 12
+    assert db_result == new_value
 
 
 @pytest.mark.asyncio
@@ -36,7 +38,6 @@ async def test_add_item(mddb_client: Client, value):
 # @pytest.mark.asyncio
 # async def test_delete_key(mddb_client: Client):
 #     key = "21"
-#     await run_client_action(mddb_client, "delete_key", key, should_read_result=True)
-#     # await run_client_action(mddb_client, "get_key_value", "17", should_read_result=True)
+#     await run_client_action(mddb_client, "delete_key", key)
 #     with pytest.raises(KeyDoesNotExists):
 #         db_result = await run_client_action(mddb_client, "get_key_value", key, should_read_result=True)
