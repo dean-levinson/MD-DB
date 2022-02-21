@@ -9,9 +9,37 @@ from md_tests.tests_consts import *
 from md_tests.test_utils import *
 from md_server.server import Server, AddAdminUserParams
 from md_client.client import Client
-from mdlib.db_utils import get_db_value
+from mdlib.db_utils import get_db_value, DBMessage, RESULTS_TO_EXCEPTIONS
+from mdlib.md_pb2 import Results, Actions, MessageTypes
 
 logging.basicConfig(level=logging.DEBUG, format="[%(levelname)s]: %(message)s")
+
+
+# async def run_client_action(mddb_client: Client, action: str, *args, **kwargs):
+#     db_value = None
+#     should_read_result = kwargs.get('should_read_result', False)
+#
+#     protobuf_obj = getattr(mddb_client.db_actions, action)(*args, **kwargs)
+#     await asyncio.wait_for(mddb_client.writer.write(protobuf_obj), TEST_COMMANDS_TIMEOUT)
+#
+#     protobuf_result = await mddb_client.reader.read()
+#     result = mddb_client.db_actions.handle_protobuf(protobuf_result)
+#
+#     try:
+#         protobuf_result_result = mddb_client.channel.get_nowait()
+#     except asyncio.queues.QueueEmpty:
+#         protobuf_result_result = None
+#
+#     if protobuf_result_result:
+#         message = DBMessage()
+#         message.ParseFromString(protobuf_result_result)
+#
+#         if message.db_result.result != Results.SUCCESS:
+#             raise RESULTS_TO_EXCEPTIONS[message.db_result.result]
+#
+#         db_value = get_db_value(message)
+#
+#     return db_value
 
 
 async def run_client_action(mddb_client: Client, action: str, *args, **kwargs):
@@ -28,6 +56,12 @@ async def run_client_action(mddb_client: Client, action: str, *args, **kwargs):
     return db_value
 
 
+def delete_client_files():
+    for root, _, files in os.walk(CLIENT_TEST_DIR):
+        for filename in files:
+            os.remove(os.path.join(root, filename))
+
+
 @pytest.yield_fixture(scope='function')
 def event_loop(request):
     loop = asyncio.get_event_loop_policy().new_event_loop()
@@ -37,8 +71,12 @@ def event_loop(request):
 
 @pytest.fixture(scope='session', autouse=True)
 def setup_dbs():
-    with DB_RESOURCE, DB_USERS_RESOURCE:
+    # Clean client test's dir
+    delete_client_files()
+    with SERVER_DB_RESOURCE, SERVER_DB_USERS_RESOURCE, SERVER_HASH_DB_RESOURCE:
         yield
+
+    # delete_client_files()
 
 
 @pytest_asyncio.fixture
@@ -64,3 +102,7 @@ async def mddb_server(request):
         yield server
 
     server.close()
+
+
+def pytest_sessionfinish(session, exitstatus):
+    asyncio.get_event_loop().close()

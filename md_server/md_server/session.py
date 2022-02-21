@@ -113,8 +113,7 @@ class Session(object):
         Checks if the client's db's hash is like the servers.
         """
         self.is_check_hash = self._check_db_md5(kwargs['db_hash'])
-        # todo: do we need the line below?
-        # self.checked_state = False
+        self.checked_state = False
 
     async def handle_get_db_state(self, *args, **kwargs):
         """
@@ -185,6 +184,7 @@ class Session(object):
             try:
                 result = await self.db_actions.handle_protobuf(request)
                 logging.debug(f"Result is: {result}")
+
             except Exception as e:
                 logging.error(f"Got Exception on {self} while handling a request!\n{traceback.format_exc()}")
                 message.db_result.result = EXCEPTIONS_TO_RESULT[type(e)]

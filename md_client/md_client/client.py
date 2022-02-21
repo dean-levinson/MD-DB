@@ -127,7 +127,7 @@ class Client(object):
             message = md_pb2.InitConn()
             message.ParseFromString(await self.reader.read())
             if not message.action_type == InitConnActions.GET_DB:
-                raise UnexpectedAction()
+                raise UnexpectedAction(f"Got {message} Instead of GET_DB action")
 
             with open(db_path, 'wb') as f:
                 f.write(message.db_file)
