@@ -7,6 +7,10 @@ TEST_DIR = os.path.abspath('md_tests/')
 
 
 class TestResource(object):
+    """
+    Managing the resource for the test session.
+    Implements context manager for easy usage.
+    """
     RESOURCE_DIR = os.path.join(TEST_DIR, "resources")
 
     def __init__(self, resource_name, dst_relative_dir=None):
@@ -36,5 +40,4 @@ class TestResource(object):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self.exist():
-            # self.remove()
-            pass
+            self.remove()

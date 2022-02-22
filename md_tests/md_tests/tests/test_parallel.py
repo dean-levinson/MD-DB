@@ -3,6 +3,9 @@ from md_tests import *
 
 @pytest.mark.asyncio
 async def test_parallel_run():
+    """
+    test parallel run of 2 different clients with the same server.
+    """
     client_1 = Client((TEST_HOSTNAME, TESTS_PORT), client_id=TEST_REGULAR_CLIENT_CREDS.id,
                       password=TEST_REGULAR_CLIENT_CREDS.password, db_name=TEST_DB_NAME, channel=asyncio.Queue(),
                       db_directory=CLIENT_TEST_DIR)

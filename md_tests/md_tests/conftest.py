@@ -43,6 +43,9 @@ logging.basicConfig(level=logging.DEBUG, format="[%(levelname)s]: %(message)s")
 
 
 async def run_client_action(mddb_client: Client, action: str, *args, **kwargs):
+    """
+    Runs client action and get the result if needed.
+    """
     db_value = None
     should_read_result = kwargs.get('should_read_result', False)
 
@@ -57,9 +60,17 @@ async def run_client_action(mddb_client: Client, action: str, *args, **kwargs):
 
 
 def delete_client_files():
+    """
+    Deletes all the files in the clients dir
+    """
     for root, _, files in os.walk(CLIENT_TEST_DIR):
         for filename in files:
             os.remove(os.path.join(root, filename))
+
+
+def create_client_and_server_dirs():
+    os.makedirs(CLIENT_TEST_DIR, exist_ok=True)
+    os.makedirs(SERVER_TEST_DIR, exist_ok=True)
 
 
 @pytest.yield_fixture(scope='function')
@@ -71,12 +82,16 @@ def event_loop(request):
 
 @pytest.fixture(scope='session', autouse=True)
 def setup_dbs():
-    # Clean client test's dir
+    """
+    before and after every test - clean the state of client and server test dir
+    and their resources.
+    """
+    create_client_and_server_dirs()
     delete_client_files()
     with SERVER_DB_RESOURCE, SERVER_DB_USERS_RESOURCE, SERVER_HASH_DB_RESOURCE:
         yield
 
-    # delete_client_files()
+    delete_client_files()
 
 
 @pytest_asyncio.fixture

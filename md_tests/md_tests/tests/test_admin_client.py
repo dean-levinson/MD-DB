@@ -14,6 +14,9 @@ async def admin_client():
 
 @pytest.mark.asyncio
 async def test_add_permissions(admin_client):
+    """
+    Test adding permission to some client on some DB.
+    """
     client_creds = TEST_CLIENT_WITHOUT_PERMISSION_YET_CREDS
 
     client_info = await run_client_action(admin_client, "get_key_value", str(client_creds.id), should_read_result=True)
@@ -31,4 +34,4 @@ async def test_add_permissions(admin_client):
                     db_name=TEST_DB_NAME, channel=asyncio.Queue(), db_directory=CLIENT_TEST_DIR)
 
     await client.connect()
-    assert client._is_connected
+    assert client._is_connected  # Check weather the client succeed connecting to the DB.

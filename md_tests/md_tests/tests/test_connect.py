@@ -13,11 +13,17 @@ async def mddb_unpermitted_client():
 
 @pytest.mark.asyncio
 async def test_simple_connect(mddb_client: Client):
+    """
+    Tests simple client connection
+    """
     assert mddb_client._is_connected
 
 
 @pytest.mark.asyncio
 async def test_client_does_not_exist_failure():
+    """
+    test a connection attempt from a client that doesn't exist
+    """
     client = Client((TEST_HOSTNAME, TESTS_PORT), client_id=TEST_DOESNT_EXIST_CLIENT_CREDS.id,
                     password=TEST_DOESNT_EXIST_CLIENT_CREDS.password,
                     db_name=TEST_DB_NAME, channel=asyncio.Queue(), db_directory=CLIENT_TEST_DIR)
@@ -28,6 +34,9 @@ async def test_client_does_not_exist_failure():
 
 @pytest.mark.asyncio
 async def test_client_does_not_permitted_failure():
+    """
+    test a connection attempt from an unauthorized client
+    """
     client = Client((TEST_HOSTNAME, TESTS_PORT), client_id=TEST_UNPERMITTED_CLIENT_CREDS.id,
                     password=TEST_UNPERMITTED_CLIENT_CREDS.password, db_name="secret_db", channel=asyncio.Queue(),
                     db_directory=CLIENT_TEST_DIR)
@@ -38,6 +47,9 @@ async def test_client_does_not_permitted_failure():
 
 @pytest.mark.asyncio
 async def test_pull_db():
+    """
+    Test the pull DB mechanism by comparing MD5 of client and server after synchronization
+    """
     client = Client((TEST_HOSTNAME, TESTS_PORT), client_id=TEST_REGULAR_CLIENT_CREDS.id,
                     password=TEST_REGULAR_CLIENT_CREDS.password, db_name=TEST_HASH_DB_NAME, channel=asyncio.Queue(),
                     db_directory=CLIENT_TEST_DIR)

@@ -5,6 +5,9 @@ from mdlib.md_pb2 import MessageTypes, Results, ValueType
 
 @pytest.mark.asyncio
 async def test_message_serialization():
+    """
+    Test message serialization ond parsing mechanism
+    """
     message = DBMessage()
     message.message_type = MessageTypes.DB_RESULT
     message.db_result.result = Results.SUCCESS
@@ -23,6 +26,9 @@ async def test_message_serialization():
 
 @pytest.mark.asyncio
 async def test_value_serialization():
+    """
+    Test value serialization ond parsing mechanism
+    """
     value = {1: 2, 3: 4}
     message = DBMessage()
     message.message_type = MessageTypes.DB_RESULT
