@@ -1,9 +1,12 @@
 import asyncio
 import logging
 import traceback
+from collections import namedtuple
 
 from md_server.session import Session
 from md_server.users import DBUsers
+
+AddAdminUserParams = namedtuple("AddAdminUserParams", ["should_add", "client_id", "password"])
 
 logging.basicConfig(level=logging.DEBUG, format="[%(levelname)s]: %(message)s")
 

@@ -58,7 +58,10 @@ class Client(object):
                 if self.reader:
                     action = await self.reader.read()
                     logging.debug(f'client {self.client_id} got action from server')
-                    await self.db_actions.handle_protobuf(action)
+                    try:
+                        await self.db_actions.handle_protobuf(action)
+                    except Exception:
+                        pass
         except (asyncio.CancelledError, Exception) as e:
             pass
 
@@ -127,7 +130,7 @@ class Client(object):
             message = md_pb2.InitConn()
             message.ParseFromString(await self.reader.read())
             if not message.action_type == InitConnActions.GET_DB:
-                raise UnexpectedAction()
+                raise UnexpectedAction(f"Got {message} Instead of GET_DB action")
 
             with open(db_path, 'wb') as f:
                 f.write(message.db_file)

@@ -113,8 +113,7 @@ class Session(object):
         Checks if the client's db's hash is like the servers.
         """
         self.is_check_hash = self._check_db_md5(kwargs['db_hash'])
-        # todo: do we need the line below?
-        # self.checked_state = False
+        self.checked_state = False
 
     async def handle_get_db_state(self, *args, **kwargs):
         """
@@ -173,6 +172,7 @@ class Session(object):
         Does initialization actions, then starts the main loop that is waiting for messages
         from the client.
         """
+        result = None
         await self._init_conn()
 
         while True:
@@ -184,6 +184,7 @@ class Session(object):
             try:
                 result = await self.db_actions.handle_protobuf(request)
                 logging.debug(f"Result is: {result}")
+
             except Exception as e:
                 logging.error(f"Got Exception on {self} while handling a request!\n{traceback.format_exc()}")
                 message.db_result.result = EXCEPTIONS_TO_RESULT[type(e)]
@@ -191,8 +192,9 @@ class Session(object):
             if result is not None:
                 message.db_value.value_type, message.db_value.value = result
             else:
-                # If result is none, command was to update something in DB. Notify all relevant clients.
+                # If result is None, command was to update something in DB. Notify all relevant clients.
                 await self.server.handle_session_request(self.db_name, bytes(request))
+
             # send our client the response message
             await self.send_protobuf(message)
 

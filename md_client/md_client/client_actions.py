@@ -36,7 +36,10 @@ class ClientActions(object):
             task_coroutine.cancel()
             exc = task_coroutine.exception()
             logging.error(f'The task coroutine raised an exception: {exc}')
-            raise exc
+            if exc:
+                raise exc
+            else:
+                raise
 
     def add_item(self, key, value):
         """

@@ -155,7 +155,7 @@ class MDActions(object):
         key = str(key)
         if key in self.db_data:
             logging.error(f"{key} already exist in DB '{self.db_path}'")
-            raise KeyAlreadyExists()
+            raise KeyAlreadyExists(f"{key} already exist in DB '{self.db_path}'")
         self.db_data[key] = value
 
     @db_transaction(write_to_db=True, action_type=Actions.SET_VALUE)

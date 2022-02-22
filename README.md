@@ -32,3 +32,9 @@ You also can create new user:
 ```cmd
 md_client -h 127.0.0.1 -p 8888 -d mydb --client-id <client-id> --add-user
 ```
+
+* Run the tests:
+```cmd
+cd <PROJECT_DIRECTORY>\md_tests
+pytest .
+```
